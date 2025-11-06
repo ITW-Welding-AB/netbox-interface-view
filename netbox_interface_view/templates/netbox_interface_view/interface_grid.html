@@ -96,7 +96,7 @@
             
             <!-- Interface Grid -->
             <div class="interface-grid-container">
-                <!-- Interface Grid with integrated port numbers -->
+                <!-- Interface Grid with port numbers above each cell -->
                 <div class="interface-grid" id="interface-grid" style="
                     display: grid; 
                     grid-template-columns: repeat({{ grid_columns }}, 1fr);
@@ -104,95 +104,100 @@
                     margin-bottom: 20px;
                 ">
                     {% for interface in interfaces %}
-                    <!-- Port Number above each cell -->
-                    <div style="text-align: center; font-size: 0.65em; color: #495057; font-weight: 600; margin-bottom: 2px; grid-column: auto;">
-                        {{ interface.original_index }}
-                    </div>
-                    {% endfor %}
-                    
-                    {% for i in empty_cells %}
-                    <!-- Empty port number -->
-                    <div style="text-align: center; font-size: 0.65em; color: #dee2e6; margin-bottom: 2px;">
-                        {{ interfaces|length|add:forloop.counter }}
-                    </div>
-                    {% endfor %}
-                    
-                    {% for interface in interfaces %}
-                    <div class="interface-cell interface-type-{{ interface.type }}" 
-                         data-interface-id="{{ interface.id }}"
-                         data-interface-index="{{ forloop.counter0 }}"
-                         data-interface-name="{{ interface.name }}"
-                         data-interface-type="{{ interface.type }}"
-                         data-bs-toggle="tooltip"
-                         data-bs-html="true"
-                         draggable="true"
-                         title="<strong>Port {{ interface.original_index }}: {{ interface.name }}</strong><br>
-                                Type: {{ interface.type }}<br>
-                                {% if interface.untagged_vlan %}Untagged: VLAN {{ interface.untagged_vlan.vid }} ({{ interface.untagged_vlan.name }})<br>{% endif %}
-                                {% if interface.tagged_vlans %}Tagged: {% for vlan in interface.tagged_vlans %}VLAN {{ vlan.vid }}{% if not forloop.last %}, {% endif %}{% endfor %}<br>{% endif %}
-                                {% if interface.description %}{{ interface.description }}<br>{% endif %}
-                                Status: {% if interface.connected and interface.enabled %}Connected & Enabled{% elif not interface.enabled %}Disabled{% else %}Disconnected{% endif %}"
-                         style="
-                            border: 3px solid {{ interface.untagged_vlan.color|default:'#cccccc' }};
-                            padding: 3px;
-                            background-color: #f8f9fa;
-                            min-height: 35px;
-                            max-height: 35px;
-                            display: flex;
-                            flex-direction: column;
-                            position: relative;
-                            overflow: hidden;
-                            cursor: move;
-                         ">
-                        <!-- Connection Status Indicator (top-right corner) -->
-                        <div style="position: absolute; top: 2px; right: 2px;">
-                            {% if interface.connected and interface.enabled %}
-                                <span style="color: #28a745; font-size: 12px;">●</span>
-                            {% elif not interface.enabled %}
-                                <span style="color: #dc3545; font-size: 12px;">●</span>
-                            {% else %}
-                                <span style="color: #6c757d; font-size: 12px;">●</span>
+                    <!-- Each grid item contains port number + cell -->
+                    <div class="grid-item-wrapper" style="display: flex; flex-direction: column; align-items: center;">
+                        <!-- Port Number above this specific cell -->
+                        <div style="text-align: center; font-size: 0.65em; color: #495057; font-weight: 600; margin-bottom: 2px;">
+                            {{ interface.original_index }}
+                        </div>
+                        
+                        <!-- Interface Cell -->
+                        <div class="interface-cell interface-type-{{ interface.type }}" 
+                             data-interface-id="{{ interface.id }}"
+                             data-interface-index="{{ forloop.counter0 }}"
+                             data-interface-name="{{ interface.name }}"
+                             data-interface-type="{{ interface.type }}"
+                             data-bs-toggle="tooltip"
+                             data-bs-html="true"
+                             draggable="true"
+                             title="<strong>Port {{ interface.original_index }}: {{ interface.name }}</strong><br>
+                                    Type: {{ interface.type }}<br>
+                                    {% if interface.untagged_vlan %}Untagged: VLAN {{ interface.untagged_vlan.vid }} ({{ interface.untagged_vlan.name }})<br>{% endif %}
+                                    {% if interface.tagged_vlans %}Tagged: {% for vlan in interface.tagged_vlans %}VLAN {{ vlan.vid }}{% if not forloop.last %}, {% endif %}{% endfor %}<br>{% endif %}
+                                    {% if interface.description %}{{ interface.description }}<br>{% endif %}
+                                    Status: {% if interface.connected and interface.enabled %}Connected & Enabled{% elif not interface.enabled %}Disabled{% else %}Disconnected{% endif %}"
+                             style="
+                                border: 3px solid {{ interface.untagged_vlan.color|default:'#cccccc' }};
+                                padding: 3px;
+                                background-color: #f8f9fa;
+                                min-height: 35px;
+                                max-height: 35px;
+                                width: 100%;
+                                display: flex;
+                                flex-direction: column;
+                                position: relative;
+                                overflow: hidden;
+                                cursor: move;
+                             ">
+                            <!-- Connection Status Indicator (top-right corner) -->
+                            <div style="position: absolute; top: 2px; right: 2px;">
+                                {% if interface.connected and interface.enabled %}
+                                    <span style="color: #28a745; font-size: 12px;">●</span>
+                                {% elif not interface.enabled %}
+                                    <span style="color: #dc3545; font-size: 12px;">●</span>
+                                {% else %}
+                                    <span style="color: #6c757d; font-size: 12px;">●</span>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Tagged VLANs dots (bottom) -->
+                            {% if interface.tagged_vlans %}
+                            <div style="position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); display: flex; gap: 2px;">
+                                {% for vlan in interface.tagged_vlans %}
+                                    <span style="
+                                        width: 7px; 
+                                        height: 7px; 
+                                        border-radius: 50%; 
+                                        background-color: {{ vlan.color }};
+                                        display: inline-block;
+                                        border: 1px solid #333;
+                                    "></span>
+                                {% endfor %}
+                            </div>
                             {% endif %}
+                            
+                            <!-- Invisible clickable link overlay -->
+                            <a href="{% url 'dcim:interface' pk=interface.id %}" target="_blank" 
+                               class="interface-link"
+                               style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; opacity: 0;"></a>
                         </div>
-                        
-                        <!-- Tagged VLANs dots (bottom) -->
-                        {% if interface.tagged_vlans %}
-                        <div style="position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); display: flex; gap: 2px;">
-                            {% for vlan in interface.tagged_vlans %}
-                                <span style="
-                                    width: 7px; 
-                                    height: 7px; 
-                                    border-radius: 50%; 
-                                    background-color: {{ vlan.color }};
-                                    display: inline-block;
-                                    border: 1px solid #333;
-                                "></span>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-                        
-                        <!-- Invisible clickable link overlay -->
-                        <a href="{% url 'dcim:interface' pk=interface.id %}" target="_blank" 
-                           class="interface-link"
-                           style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; opacity: 0;"></a>
                     </div>
                     {% endfor %}
                     
                     <!-- Empty cells to fill the grid -->
                     {% for i in empty_cells %}
-                    <div class="interface-cell-empty" style="
-                        border: 1px dashed #dee2e6;
-                        border-radius: 3px;
-                        padding: 4px;
-                        background-color: #ffffff;
-                        min-height: 35px;
-                        max-height: 35px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        color: #adb5bd;
-                    ">
-                        <span style="font-size: 0.6em;">—</span>
+                    <div class="grid-item-wrapper" style="display: flex; flex-direction: column; align-items: center;">
+                        <!-- Empty port number -->
+                        <div style="text-align: center; font-size: 0.65em; color: #dee2e6; margin-bottom: 2px;">
+                            {{ interfaces|length|add:forloop.counter }}
+                        </div>
+                        
+                        <!-- Empty Cell -->
+                        <div class="interface-cell-empty" style="
+                            border: 1px dashed #dee2e6;
+                            border-radius: 3px;
+                            padding: 4px;
+                            background-color: #ffffff;
+                            min-height: 35px;
+                            max-height: 35px;
+                            width: 100%;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            color: #adb5bd;
+                        ">
+                            <span style="font-size: 0.6em;">—</span>
+                        </div>
                     </div>
                     {% endfor %}
                 </div>
