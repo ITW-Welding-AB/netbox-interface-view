@@ -67,7 +67,7 @@
                     <strong>Helper</strong>
                 </div>
                 <div class="card-body">
-                    <div class="row">
+                    <div class="row mb-2">
                         <div class="col-md-3">
                             <span class="badge bg-success">●</span> Connected & Enabled
                         </div>
@@ -78,7 +78,18 @@
                             <span class="badge bg-danger">●</span> Disabled
                         </div>
                         <div class="col-md-3">
-                            <strong>Border Color:</strong> Untagged VLAN | <strong>Dots:</strong> Tagged VLANs
+                            <strong>Border:</strong> Untagged VLAN | <strong>Dots:</strong> Tagged VLANs
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <strong>Interface Types (top-left badge):</strong>
+                            <span style="display: inline-block; width: 8px; height: 8px; background-color: #007bff; margin: 0 3px;"></span> Ethernet (fixed)
+                            <span style="display: inline-block; width: 8px; height: 8px; background-color: #17a2b8; border-radius: 50%; margin: 0 3px;"></span> Ethernet (modular)
+                            <span style="display: inline-block; width: 8px; height: 8px; background: repeating-linear-gradient(45deg, #6c757d, #6c757d 2px, transparent 2px, transparent 4px); margin: 0 3px;"></span> Virtual/LAG
+                            <span style="display: inline-block; width: 8px; height: 8px; background-color: #28a745; margin: 0 3px;"></span> Stacking
+                            <span style="display: inline-block; width: 8px; height: 8px; background-color: #ffc107; margin: 0 3px;"></span> Wireless
+                            <span style="display: inline-block; width: 8px; height: 8px; background-color: #fd7e14; margin: 0 3px;"></span> Cellular
                         </div>
                     </div>
                 </div>
@@ -86,25 +97,7 @@
             
             <!-- Interface Grid -->
             <div class="interface-grid-container">
-                <!-- Port Index Numbers Row -->
-                <div style="display: grid; grid-template-columns: repeat({{ grid_columns }}, 1fr); gap: 4px; margin-bottom: 4px;">
-                    {% for interface in interfaces %}
-                        {% if forloop.counter <= grid_columns %}
-                        <div style="text-align: center; font-size: 0.65em; color: #495057; font-weight: 600;">
-                            {{ forloop.counter }}
-                        </div>
-                        {% endif %}
-                    {% endfor %}
-                    {% for i in empty_cells %}
-                        {% if forloop.counter <= grid_columns %}
-                        <div style="text-align: center; font-size: 0.65em; color: #adb5bd;">
-                            {{ interfaces|length|add:forloop.counter }}
-                        </div>
-                        {% endif %}
-                    {% endfor %}
-                </div>
-                
-                <!-- Interface Grid -->
+                <!-- Interface Grid with integrated port numbers -->
                 <div class="interface-grid" id="interface-grid" style="
                     display: grid; 
                     grid-template-columns: repeat({{ grid_columns }}, 1fr);
@@ -112,10 +105,25 @@
                     margin-bottom: 20px;
                 ">
                     {% for interface in interfaces %}
-                    <div class="interface-cell" 
+                    <!-- Port Number above each cell -->
+                    <div style="text-align: center; font-size: 0.65em; color: #495057; font-weight: 600; margin-bottom: 2px; grid-column: auto;">
+                        {{ forloop.counter }}
+                    </div>
+                    {% endfor %}
+                    
+                    {% for i in empty_cells %}
+                    <!-- Empty port number -->
+                    <div style="text-align: center; font-size: 0.65em; color: #dee2e6; margin-bottom: 2px;">
+                        {{ interfaces|length|add:forloop.counter }}
+                    </div>
+                    {% endfor %}
+                    
+                    {% for interface in interfaces %}
+                    <div class="interface-cell interface-type-{{ interface.type }}" 
                          data-interface-id="{{ interface.id }}"
                          data-interface-index="{{ forloop.counter0 }}"
                          data-interface-name="{{ interface.name }}"
+                         data-interface-type="{{ interface.type }}"
                          data-bs-toggle="tooltip"
                          data-bs-html="true"
                          draggable="true"
@@ -164,6 +172,9 @@
                             {% endfor %}
                         </div>
                         {% endif %}
+                        
+                        <!-- Interface type indicator (top-left corner) -->
+                        <div class="interface-type-badge" style="position: absolute; top: 2px; left: 2px; width: 8px; height: 8px; border-radius: 2px;"></div>
                         
                         <!-- Invisible clickable link overlay -->
                         <a href="{% url 'dcim:interface' pk=interface.id %}" target="_blank" 
@@ -222,6 +233,73 @@
     
     .interface-cell[draggable="true"] .interface-link {
         pointer-events: none;
+    }
+    
+    /* Interface Type Visual Differentiation */
+    /* Virtual interfaces - diagonal stripes */
+    .interface-cell[data-interface-type*="virtual"] .interface-type-badge,
+    .interface-cell[data-interface-type*="lag"] .interface-type-badge,
+    .interface-cell[data-interface-type*="bridge"] .interface-type-badge {
+        background: repeating-linear-gradient(45deg, #6c757d, #6c757d 2px, transparent 2px, transparent 4px);
+    }
+    
+    /* Ethernet (fixed) - solid square */
+    .interface-cell[data-interface-type*="100base"] .interface-type-badge,
+    .interface-cell[data-interface-type*="1000base"] .interface-type-badge,
+    .interface-cell[data-interface-type*="2.5gbase"] .interface-type-badge,
+    .interface-cell[data-interface-type*="5gbase"] .interface-type-badge,
+    .interface-cell[data-interface-type*="10gbase"] .interface-type-badge {
+        background-color: #007bff;
+    }
+    
+    /* Ethernet (modular) - circle */
+    .interface-cell[data-interface-type*="sfp"] .interface-type-badge,
+    .interface-cell[data-interface-type*="qsfp"] .interface-type-badge,
+    .interface-cell[data-interface-type*="xfp"] .interface-type-badge,
+    .interface-cell[data-interface-type*="cfp"] .interface-type-badge {
+        background-color: #17a2b8;
+        border-radius: 50%;
+    }
+    
+    /* Wireless - wave pattern */
+    .interface-cell[data-interface-type*="ieee802.11"] .interface-type-badge {
+        background: radial-gradient(circle, #ffc107 0%, transparent 50%);
+    }
+    
+    /* Cellular - triangle */
+    .interface-cell[data-interface-type*="gsm"] .interface-type-badge,
+    .interface-cell[data-interface-type*="cdma"] .interface-type-badge,
+    .interface-cell[data-interface-type*="lte"] .interface-type-badge {
+        background-color: #fd7e14;
+        clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+    }
+    
+    /* Fiber/SONET - diamond */
+    .interface-cell[data-interface-type*="sonet"] .interface-type-badge,
+    .interface-cell[data-interface-type*="sdh"] .interface-type-badge {
+        background-color: #20c997;
+        transform: rotate(45deg);
+    }
+    
+    /* FibreChannel - FC badge */
+    .interface-cell[data-interface-type*="fibrechannel"] .interface-type-badge {
+        background-color: #dc3545;
+        border: 1px solid #fff;
+    }
+    
+    /* Serial - horizontal lines */
+    .interface-cell[data-interface-type*="t1"] .interface-type-badge,
+    .interface-cell[data-interface-type*="e1"] .interface-type-badge,
+    .interface-cell[data-interface-type*="t3"] .interface-type-badge,
+    .interface-cell[data-interface-type*="e3"] .interface-type-badge {
+        background: repeating-linear-gradient(0deg, #6f42c1, #6f42c1 1px, transparent 1px, transparent 3px);
+    }
+    
+    /* Stacking - double square */
+    .interface-cell[data-interface-type*="stackwise"] .interface-type-badge,
+    .interface-cell[data-interface-type*="stack"] .interface-type-badge {
+        background-color: #28a745;
+        box-shadow: -2px -2px 0 0 #28a745;
     }
 </style>
 
