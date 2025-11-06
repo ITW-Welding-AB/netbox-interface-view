@@ -1,2 +1,3 @@
-# netbox-plugin-interface-view
+## netbox-interface-view
+
 Netbox Plugin for viewing interfaces with stylish layout
