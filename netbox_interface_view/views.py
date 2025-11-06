@@ -29,7 +29,7 @@ class InterfaceGridView(View):
         
         # Build interface data with VLAN colors and connection status
         interface_list = []
-        for interface in interfaces:
+        for idx, interface in enumerate(interfaces):
             # Get VLAN colors
             untagged_vlan = None
             tagged_vlans = []
@@ -65,6 +65,7 @@ class InterfaceGridView(View):
                 'connected': is_connected,
                 'untagged_vlan': untagged_vlan,
                 'tagged_vlans': tagged_vlans,
+                'original_index': idx + 1,  # 1-based index for display
             })
         
         # Get unique interface types for filter dropdown

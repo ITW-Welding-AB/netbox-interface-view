@@ -83,13 +83,12 @@
                     </div>
                     <div class="row">
                         <div class="col-md-12">
-                            <strong>Interface Types (top-left badge):</strong>
-                            <span style="display: inline-block; width: 8px; height: 8px; background-color: #007bff; margin: 0 3px;"></span> Ethernet (fixed)
-                            <span style="display: inline-block; width: 8px; height: 8px; background-color: #17a2b8; border-radius: 50%; margin: 0 3px;"></span> Ethernet (modular)
-                            <span style="display: inline-block; width: 8px; height: 8px; background: repeating-linear-gradient(45deg, #6c757d, #6c757d 2px, transparent 2px, transparent 4px); margin: 0 3px;"></span> Virtual/LAG
-                            <span style="display: inline-block; width: 8px; height: 8px; background-color: #28a745; margin: 0 3px;"></span> Stacking
-                            <span style="display: inline-block; width: 8px; height: 8px; background-color: #ffc107; margin: 0 3px;"></span> Wireless
-                            <span style="display: inline-block; width: 8px; height: 8px; background-color: #fd7e14; margin: 0 3px;"></span> Cellular
+                            <strong>Interface Types (border style):</strong>
+                            <span style="display: inline-block; width: 20px; height: 20px; border: 2px solid #333; border-radius: 2px; margin: 0 3px; vertical-align: middle;"></span> Ethernet (fixed - blocky)
+                            <span style="display: inline-block; width: 20px; height: 20px; border: 2px solid #333; border-radius: 12px; margin: 0 3px; vertical-align: middle;"></span> Ethernet (modular - rounded)
+                            <span style="display: inline-block; width: 20px; height: 20px; border: 2px dashed #333; border-radius: 0px; margin: 0 3px; vertical-align: middle;"></span> Virtual/LAG (dashed)
+                            <span style="display: inline-block; width: 20px; height: 20px; border: 3px solid #333; border-radius: 4px; margin: 0 3px; vertical-align: middle;"></span> Stacking (thick border)
+                            <span style="display: inline-block; width: 20px; height: 20px; border: 2px solid #333; border-radius: 25px; margin: 0 3px; vertical-align: middle;"></span> Wireless (pill)
                         </div>
                     </div>
                 </div>
@@ -107,7 +106,7 @@
                     {% for interface in interfaces %}
                     <!-- Port Number above each cell -->
                     <div style="text-align: center; font-size: 0.65em; color: #495057; font-weight: 600; margin-bottom: 2px; grid-column: auto;">
-                        {{ forloop.counter }}
+                        {{ interface.original_index }}
                     </div>
                     {% endfor %}
                     
@@ -127,7 +126,7 @@
                          data-bs-toggle="tooltip"
                          data-bs-html="true"
                          draggable="true"
-                         title="<strong>Port {{ forloop.counter }}: {{ interface.name }}</strong><br>
+                         title="<strong>Port {{ interface.original_index }}: {{ interface.name }}</strong><br>
                                 Type: {{ interface.type }}<br>
                                 {% if interface.untagged_vlan %}Untagged: VLAN {{ interface.untagged_vlan.vid }} ({{ interface.untagged_vlan.name }})<br>{% endif %}
                                 {% if interface.tagged_vlans %}Tagged: {% for vlan in interface.tagged_vlans %}VLAN {{ vlan.vid }}{% if not forloop.last %}, {% endif %}{% endfor %}<br>{% endif %}
@@ -135,7 +134,6 @@
                                 Status: {% if interface.connected and interface.enabled %}Connected & Enabled{% elif not interface.enabled %}Disabled{% else %}Disconnected{% endif %}"
                          style="
                             border: 3px solid {{ interface.untagged_vlan.color|default:'#cccccc' }};
-                            border-radius: 3px;
                             padding: 4px;
                             background-color: #f8f9fa;
                             min-height: 50px;
@@ -146,7 +144,18 @@
                             overflow: hidden;
                             cursor: move;
                          ">
-                        <!-- Connection Status Indicator (centered) -->
+                        <!-- Connection Status Indicator (top-right corner) -->
+                        <div style="position: absolute; top: 2px; right: 2px;">
+                            {% if interface.connected and interface.enabled %}
+                                <span style="color: #28a745; font-size: 10px;">●</span>
+                            {% elif not interface.enabled %}
+                                <span style="color: #dc3545; font-size: 10px;">●</span>
+                            {% else %}
+                                <span style="color: #6c757d; font-size: 10px;">●</span>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Large center status dot (for main visual) -->
                         <div style="display: flex; align-items: center; justify-content: center; height: 100%;">
                             {% if interface.connected and interface.enabled %}
                                 <span style="color: #28a745; font-size: 18px;">●</span>
@@ -172,9 +181,6 @@
                             {% endfor %}
                         </div>
                         {% endif %}
-                        
-                        <!-- Interface type indicator (top-left corner) -->
-                        <div class="interface-type-badge" style="position: absolute; top: 2px; left: 2px; width: 8px; height: 8px; border-radius: 2px;"></div>
                         
                         <!-- Invisible clickable link overlay -->
                         <a href="{% url 'dcim:interface' pk=interface.id %}" target="_blank" 
@@ -235,71 +241,109 @@
         pointer-events: none;
     }
     
-    /* Interface Type Visual Differentiation */
-    /* Virtual interfaces - diagonal stripes */
-    .interface-cell[data-interface-type*="virtual"] .interface-type-badge,
-    .interface-cell[data-interface-type*="lag"] .interface-type-badge,
-    .interface-cell[data-interface-type*="bridge"] .interface-type-badge {
-        background: repeating-linear-gradient(45deg, #6c757d, #6c757d 2px, transparent 2px, transparent 4px);
+    /* Interface Type Visual Differentiation via Border Styling */
+    
+    /* Virtual interfaces - no border radius (sharp square corners) */
+    .interface-cell[data-interface-type*="virtual"],
+    .interface-cell[data-interface-type*="lag"],
+    .interface-cell[data-interface-type*="bridge"] {
+        border-radius: 0px !important;
+        border-style: dashed !important;
     }
     
-    /* Ethernet (fixed) - solid square */
-    .interface-cell[data-interface-type*="100base"] .interface-type-badge,
-    .interface-cell[data-interface-type*="1000base"] .interface-type-badge,
-    .interface-cell[data-interface-type*="2.5gbase"] .interface-type-badge,
-    .interface-cell[data-interface-type*="5gbase"] .interface-type-badge,
-    .interface-cell[data-interface-type*="10gbase"] .interface-type-badge {
-        background-color: #007bff;
+    /* Ethernet (fixed) - blocky/square corners (minimal radius) */
+    .interface-cell[data-interface-type*="100base"],
+    .interface-cell[data-interface-type*="1000base"],
+    .interface-cell[data-interface-type*="2.5gbase"],
+    .interface-cell[data-interface-type*="5gbase"],
+    .interface-cell[data-interface-type*="10gbase"],
+    .interface-cell[data-interface-type*="25gbase"],
+    .interface-cell[data-interface-type*="40gbase"],
+    .interface-cell[data-interface-type*="100gbase"] {
+        border-radius: 2px !important;
     }
     
-    /* Ethernet (modular) - circle */
-    .interface-cell[data-interface-type*="sfp"] .interface-type-badge,
-    .interface-cell[data-interface-type*="qsfp"] .interface-type-badge,
-    .interface-cell[data-interface-type*="xfp"] .interface-type-badge,
-    .interface-cell[data-interface-type*="cfp"] .interface-type-badge {
-        background-color: #17a2b8;
-        border-radius: 50%;
+    /* Ethernet (modular) - very rounded corners (SFP, QSFP, etc.) */
+    .interface-cell[data-interface-type*="sfp"],
+    .interface-cell[data-interface-type*="qsfp"],
+    .interface-cell[data-interface-type*="xfp"],
+    .interface-cell[data-interface-type*="cfp"],
+    .interface-cell[data-interface-type*="cx4"] {
+        border-radius: 12px !important;
     }
     
-    /* Wireless - wave pattern */
-    .interface-cell[data-interface-type*="ieee802.11"] .interface-type-badge {
-        background: radial-gradient(circle, #ffc107 0%, transparent 50%);
+    /* Ethernet (backplane) - medium square corners */
+    .interface-cell[data-interface-type*="backplane"] {
+        border-radius: 1px !important;
+        border-width: 4px !important;
     }
     
-    /* Cellular - triangle */
-    .interface-cell[data-interface-type*="gsm"] .interface-type-badge,
-    .interface-cell[data-interface-type*="cdma"] .interface-type-badge,
-    .interface-cell[data-interface-type*="lte"] .interface-type-badge {
-        background-color: #fd7e14;
-        clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+    /* Wireless - pill shape (very rounded) */
+    .interface-cell[data-interface-type*="ieee802.11"],
+    .interface-cell[data-interface-type*="80211"] {
+        border-radius: 25px !important;
     }
     
-    /* Fiber/SONET - diamond */
-    .interface-cell[data-interface-type*="sonet"] .interface-type-badge,
-    .interface-cell[data-interface-type*="sdh"] .interface-type-badge {
-        background-color: #20c997;
+    /* Cellular - octagon-like (medium-high radius) */
+    .interface-cell[data-interface-type*="gsm"],
+    .interface-cell[data-interface-type*="cdma"],
+    .interface-cell[data-interface-type*="lte"],
+    .interface-cell[data-interface-type*="5g"] {
+        border-radius: 8px !important;
+        clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+    }
+    
+    /* SONET/SDH - diamond shape */
+    .interface-cell[data-interface-type*="sonet"],
+    .interface-cell[data-interface-type*="sdh"] {
+        border-radius: 0px !important;
         transform: rotate(45deg);
     }
-    
-    /* FibreChannel - FC badge */
-    .interface-cell[data-interface-type*="fibrechannel"] .interface-type-badge {
-        background-color: #dc3545;
-        border: 1px solid #fff;
+    .interface-cell[data-interface-type*="sonet"] > *,
+    .interface-cell[data-interface-type*="sdh"] > * {
+        transform: rotate(-45deg);
     }
     
-    /* Serial - horizontal lines */
-    .interface-cell[data-interface-type*="t1"] .interface-type-badge,
-    .interface-cell[data-interface-type*="e1"] .interface-type-badge,
-    .interface-cell[data-interface-type*="t3"] .interface-type-badge,
-    .interface-cell[data-interface-type*="e3"] .interface-type-badge {
-        background: repeating-linear-gradient(0deg, #6f42c1, #6f42c1 1px, transparent 1px, transparent 3px);
+    /* FibreChannel - rounded square */
+    .interface-cell[data-interface-type*="fibrechannel"],
+    .interface-cell[data-interface-type*="fc"] {
+        border-radius: 6px !important;
+        border-width: 4px !important;
     }
     
-    /* Stacking - double square */
-    .interface-cell[data-interface-type*="stackwise"] .interface-type-badge,
-    .interface-cell[data-interface-type*="stack"] .interface-type-badge {
-        background-color: #28a745;
-        box-shadow: -2px -2px 0 0 #28a745;
+    /* Serial - sharp with double border effect */
+    .interface-cell[data-interface-type*="t1"],
+    .interface-cell[data-interface-type*="e1"],
+    .interface-cell[data-interface-type*="t3"],
+    .interface-cell[data-interface-type*="e3"],
+    .interface-cell[data-interface-type*="serial"] {
+        border-radius: 0px !important;
+        box-shadow: inset 0 0 0 1px rgba(0,0,0,0.3);
+    }
+    
+    /* Stacking - medium rounded with thicker border */
+    .interface-cell[data-interface-type*="stackwise"],
+    .interface-cell[data-interface-type*="stack"] {
+        border-radius: 4px !important;
+        border-width: 5px !important;
+    }
+    
+    /* InfiniBand - hexagon-like */
+    .interface-cell[data-interface-type*="infiniband"] {
+        border-radius: 3px !important;
+        clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+    }
+    
+    /* Coaxial - circular */
+    .interface-cell[data-interface-type*="coaxial"] {
+        border-radius: 50% !important;
+    }
+    
+    /* PON - rounded rectangle */
+    .interface-cell[data-interface-type*="pon"],
+    .interface-cell[data-interface-type*="epon"],
+    .interface-cell[data-interface-type*="gpon"] {
+        border-radius: 10px !important;
     }
 </style>
 
