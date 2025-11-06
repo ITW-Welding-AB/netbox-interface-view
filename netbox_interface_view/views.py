@@ -77,18 +77,20 @@ class InterfaceGridView(View):
         empty_cells_count = max(0, (grid_rows * grid_columns) - len(interface_list))
         empty_cells = range(empty_cells_count)
         
-        # Reorder interfaces based on grid order
+        # For column-major display, keep interfaces in original order
+        # The template will render them in CSS grid which fills row by row
+        # So we need to transform positions to achieve column-major visual layout
+        # For a 2x24 grid with column-major: 1,2 in col1, 3,4 in col2, etc.
+        # This means we need to reorder: [1,2,3,4,5,6...] -> [1,3,5...2,4,6...]
         if grid_order == 'column-major':
-            # Reorder to column-major: fill columns first
-            # For 2x3 grid: positions [0,1], [2,3], [4,5] instead of [0,1,2], [3,4,5]
-            reordered_interfaces = [None] * len(interface_list)
-            for idx, interface in enumerate(interface_list):
-                col = idx // grid_rows
-                row = idx % grid_rows
-                new_idx = row * grid_columns + col
-                if new_idx < len(interface_list):
-                    reordered_interfaces[new_idx] = interface
-            interface_list = [i for i in reordered_interfaces if i is not None]
+            # Transform to column-major: split into rows, then interleave
+            reordered_interfaces = []
+            for col in range(grid_columns):
+                for row in range(grid_rows):
+                    idx = col * grid_rows + row
+                    if idx < len(interface_list):
+                        reordered_interfaces.append(interface_list[idx])
+            interface_list = reordered_interfaces
         
         context = {
             'device': device,

@@ -85,7 +85,7 @@
                         <div class="col-md-12">
                             <strong>Interface Types (border style):</strong>
                             <span style="display: inline-block; width: 20px; height: 20px; border: 2px solid #333; border-radius: 2px; margin: 0 3px; vertical-align: middle;"></span> Ethernet (fixed - blocky)
-                            <span style="display: inline-block; width: 20px; height: 20px; border: 2px solid #333; border-radius: 12px; margin: 0 3px; vertical-align: middle;"></span> Ethernet (modular - rounded)
+                            <span style="display: inline-block; width: 20px; height: 20px; border: 2px solid #333; border-radius: 6px; margin: 0 3px; vertical-align: middle;"></span> Ethernet (modular - rounded)
                             <span style="display: inline-block; width: 20px; height: 20px; border: 2px dashed #333; border-radius: 0px; margin: 0 3px; vertical-align: middle;"></span> Virtual/LAG (dashed)
                             <span style="display: inline-block; width: 20px; height: 20px; border: 3px solid #333; border-radius: 4px; margin: 0 3px; vertical-align: middle;"></span> Stacking (thick border)
                             <span style="display: inline-block; width: 20px; height: 20px; border: 2px solid #333; border-radius: 25px; margin: 0 3px; vertical-align: middle;"></span> Wireless (pill)
@@ -134,10 +134,10 @@
                                 Status: {% if interface.connected and interface.enabled %}Connected & Enabled{% elif not interface.enabled %}Disabled{% else %}Disconnected{% endif %}"
                          style="
                             border: 3px solid {{ interface.untagged_vlan.color|default:'#cccccc' }};
-                            padding: 4px;
+                            padding: 3px;
                             background-color: #f8f9fa;
-                            min-height: 50px;
-                            max-height: 50px;
+                            min-height: 35px;
+                            max-height: 35px;
                             display: flex;
                             flex-direction: column;
                             position: relative;
@@ -147,22 +147,11 @@
                         <!-- Connection Status Indicator (top-right corner) -->
                         <div style="position: absolute; top: 2px; right: 2px;">
                             {% if interface.connected and interface.enabled %}
-                                <span style="color: #28a745; font-size: 10px;">●</span>
+                                <span style="color: #28a745; font-size: 12px;">●</span>
                             {% elif not interface.enabled %}
-                                <span style="color: #dc3545; font-size: 10px;">●</span>
+                                <span style="color: #dc3545; font-size: 12px;">●</span>
                             {% else %}
-                                <span style="color: #6c757d; font-size: 10px;">●</span>
-                            {% endif %}
-                        </div>
-                        
-                        <!-- Large center status dot (for main visual) -->
-                        <div style="display: flex; align-items: center; justify-content: center; height: 100%;">
-                            {% if interface.connected and interface.enabled %}
-                                <span style="color: #28a745; font-size: 18px;">●</span>
-                            {% elif not interface.enabled %}
-                                <span style="color: #dc3545; font-size: 18px;">●</span>
-                            {% else %}
-                                <span style="color: #6c757d; font-size: 18px;">●</span>
+                                <span style="color: #6c757d; font-size: 12px;">●</span>
                             {% endif %}
                         </div>
                         
@@ -196,8 +185,8 @@
                         border-radius: 3px;
                         padding: 4px;
                         background-color: #ffffff;
-                        min-height: 50px;
-                        max-height: 50px;
+                        min-height: 35px;
+                        max-height: 35px;
                         display: flex;
                         align-items: center;
                         justify-content: center;
@@ -263,13 +252,13 @@
         border-radius: 2px !important;
     }
     
-    /* Ethernet (modular) - very rounded corners (SFP, QSFP, etc.) */
+    /* Ethernet (modular) - rounded corners (SFP, QSFP, etc.) */
     .interface-cell[data-interface-type*="sfp"],
     .interface-cell[data-interface-type*="qsfp"],
     .interface-cell[data-interface-type*="xfp"],
     .interface-cell[data-interface-type*="cfp"],
     .interface-cell[data-interface-type*="cx4"] {
-        border-radius: 12px !important;
+        border-radius: 6px !important;
     }
     
     /* Ethernet (backplane) - medium square corners */
