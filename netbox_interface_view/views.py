@@ -14,6 +14,9 @@ class InterfaceGridView(View):
         grid_rows = device.custom_field_data.get('grid_rows', 2)
         grid_columns = device.custom_field_data.get('grid_columns', 24)
         
+        # Get grid order preference (column-major by default)
+        grid_order = request.GET.get('grid_order', 'column-major')
+        
         # Get filter parameters
         filter_types = request.GET.getlist('exclude_type', [])
         
@@ -73,6 +76,19 @@ class InterfaceGridView(View):
         empty_cells_count = max(0, (grid_rows * grid_columns) - len(interface_list))
         empty_cells = range(empty_cells_count)
         
+        # Reorder interfaces based on grid order
+        if grid_order == 'column-major':
+            # Reorder to column-major: fill columns first
+            # For 2x3 grid: positions [0,1], [2,3], [4,5] instead of [0,1,2], [3,4,5]
+            reordered_interfaces = [None] * len(interface_list)
+            for idx, interface in enumerate(interface_list):
+                col = idx // grid_rows
+                row = idx % grid_rows
+                new_idx = row * grid_columns + col
+                if new_idx < len(interface_list):
+                    reordered_interfaces[new_idx] = interface
+            interface_list = [i for i in reordered_interfaces if i is not None]
+        
         context = {
             'device': device,
             'interfaces': interface_list,
@@ -82,6 +98,7 @@ class InterfaceGridView(View):
             'empty_cells': empty_cells,
             'interface_types': all_interface_types,
             'excluded_types': filter_types,
+            'grid_order': grid_order,
         }
         
         return render(request, 'netbox_interface_view/interface_grid.html', context)
