@@ -152,22 +152,20 @@
                     {% endfor %}
                     
                     <!-- Empty cells to fill the grid -->
-                    {% for i in "x"|rjust:total_cells %}
-                        {% if forloop.counter0 >= interfaces|length %}
-                        <div class="interface-cell-empty" style="
-                            border: 2px dashed #dee2e6;
-                            border-radius: 4px;
-                            padding: 10px;
-                            background-color: #ffffff;
-                            min-height: 100px;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            color: #adb5bd;
-                        ">
-                            <span style="font-size: 0.85em;">Empty</span>
-                        </div>
-                        {% endif %}
+                    {% for i in empty_cells %}
+                    <div class="interface-cell-empty" style="
+                        border: 2px dashed #dee2e6;
+                        border-radius: 4px;
+                        padding: 10px;
+                        background-color: #ffffff;
+                        min-height: 100px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: #adb5bd;
+                    ">
+                        <span style="font-size: 0.85em;">Empty</span>
+                    </div>
                     {% endfor %}
                 </div>
             </div>

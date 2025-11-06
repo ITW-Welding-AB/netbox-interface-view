@@ -65,7 +65,13 @@ class InterfaceGridView(View):
             })
         
         # Get unique interface types for filter dropdown
-        all_interface_types = Interface.objects.filter(device=device).values_list('type', flat=True).distinct()
+        # Extract from already-fetched interfaces to avoid extra query
+        all_interface_types = list(set(iface['type'] for iface in interface_list))
+        all_interface_types.sort()
+        
+        # Calculate empty cells
+        empty_cells_count = max(0, (grid_rows * grid_columns) - len(interface_list))
+        empty_cells = range(empty_cells_count)
         
         context = {
             'device': device,
@@ -73,7 +79,8 @@ class InterfaceGridView(View):
             'grid_rows': grid_rows,
             'grid_columns': grid_columns,
             'total_cells': grid_rows * grid_columns,
-            'interface_types': list(all_interface_types),
+            'empty_cells': empty_cells,
+            'interface_types': all_interface_types,
             'excluded_types': filter_types,
         }
         

@@ -1,5 +1,6 @@
 from extras.plugins import PluginTemplateExtension
 from django.urls import reverse
+from django.utils.html import format_html
 
 
 class DeviceInterfaceGridButton(PluginTemplateExtension):
@@ -10,13 +11,13 @@ class DeviceInterfaceGridButton(PluginTemplateExtension):
     def buttons(self):
         """Add button to device detail page"""
         obj = self.context['object']
-        return f'''
-        <a href="{reverse('plugins:netbox_interface_view:interface_grid', kwargs={'device_id': obj.pk})}" 
-           class="btn btn-sm btn-primary" 
-           title="View Interface Grid">
-            <i class="mdi mdi-view-grid"></i> View Interface Grid
-        </a>
-        '''
+        url = reverse('plugins:netbox_interface_view:interface_grid', kwargs={'device_id': obj.pk})
+        return format_html(
+            '<a href="{}" class="btn btn-sm btn-primary" title="View Interface Grid">'
+            '<i class="mdi mdi-view-grid"></i> View Interface Grid'
+            '</a>',
+            url
+        )
 
 
 template_extensions = [DeviceInterfaceGridButton]

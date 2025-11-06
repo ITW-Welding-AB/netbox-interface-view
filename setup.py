@@ -1,10 +1,16 @@
 from setuptools import find_packages, setup
 
+try:
+    with open('README.md', 'r', encoding='utf-8') as f:
+        long_description = f.read()
+except (IOError, FileNotFoundError):
+    long_description = 'NetBox Plugin for viewing interfaces in a grid layout with VLAN color-coding'
+
 setup(
     name='netbox-interface-view',
     version='0.1.0',
     description='NetBox Plugin for viewing interfaces in a grid layout with VLAN color-coding',
-    long_description=open('README.md').read(),
+    long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/Tolfx/netbox-plugin-interface-view',
     author='Tolfx',
