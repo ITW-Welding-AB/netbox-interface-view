@@ -86,19 +86,40 @@
             
             <!-- Interface Grid -->
             <div class="interface-grid-container">
-                <div class="interface-grid" style="
+                <!-- Port Index Numbers Row -->
+                <div style="display: grid; grid-template-columns: repeat({{ grid_columns }}, 1fr); gap: 4px; margin-bottom: 4px;">
+                    {% for interface in interfaces %}
+                        {% if forloop.counter <= grid_columns %}
+                        <div style="text-align: center; font-size: 0.65em; color: #495057; font-weight: 600;">
+                            {{ forloop.counter }}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                    {% for i in empty_cells %}
+                        {% if forloop.counter <= grid_columns %}
+                        <div style="text-align: center; font-size: 0.65em; color: #adb5bd;">
+                            {{ interfaces|length|add:forloop.counter }}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                
+                <!-- Interface Grid -->
+                <div class="interface-grid" id="interface-grid" style="
                     display: grid; 
                     grid-template-columns: repeat({{ grid_columns }}, 1fr);
-                    grid-template-rows: repeat({{ grid_rows }}, 1fr);
                     gap: 4px;
                     margin-bottom: 20px;
                 ">
                     {% for interface in interfaces %}
                     <div class="interface-cell" 
                          data-interface-id="{{ interface.id }}"
+                         data-interface-index="{{ forloop.counter0 }}"
+                         data-interface-name="{{ interface.name }}"
                          data-bs-toggle="tooltip"
                          data-bs-html="true"
-                         title="<strong>{{ interface.name }}</strong><br>
+                         draggable="true"
+                         title="<strong>Port {{ forloop.counter }}: {{ interface.name }}</strong><br>
                                 Type: {{ interface.type }}<br>
                                 {% if interface.untagged_vlan %}Untagged: VLAN {{ interface.untagged_vlan.vid }} ({{ interface.untagged_vlan.name }})<br>{% endif %}
                                 {% if interface.tagged_vlans %}Tagged: {% for vlan in interface.tagged_vlans %}VLAN {{ vlan.vid }}{% if not forloop.last %}, {% endif %}{% endfor %}<br>{% endif %}
@@ -115,32 +136,26 @@
                             flex-direction: column;
                             position: relative;
                             overflow: hidden;
+                            cursor: move;
                          ">
-                        <!-- Connection Status Indicator -->
-                        <div style="position: absolute; top: 2px; right: 2px;">
+                        <!-- Connection Status Indicator (centered) -->
+                        <div style="display: flex; align-items: center; justify-content: center; height: 100%;">
                             {% if interface.connected and interface.enabled %}
-                                <span style="color: #28a745; font-size: 10px;">●</span>
+                                <span style="color: #28a745; font-size: 18px;">●</span>
                             {% elif not interface.enabled %}
-                                <span style="color: #dc3545; font-size: 10px;">●</span>
+                                <span style="color: #dc3545; font-size: 18px;">●</span>
                             {% else %}
-                                <span style="color: #6c757d; font-size: 10px;">●</span>
+                                <span style="color: #6c757d; font-size: 18px;">●</span>
                             {% endif %}
                         </div>
                         
-                        <!-- Interface Name -->
-                        <div style="font-weight: bold; font-size: 0.7em; margin-bottom: 2px; margin-top: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                            <a href="{% url 'dcim:interface' pk=interface.id %}" target="_blank" style="color: inherit;">
-                                {{ interface.name }}
-                            </a>
-                        </div>
-                        
-                        <!-- Tagged VLANs dots -->
+                        <!-- Tagged VLANs dots (bottom) -->
                         {% if interface.tagged_vlans %}
-                        <div style="margin-top: auto; display: flex; gap: 2px; flex-wrap: wrap; justify-content: center;">
+                        <div style="position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); display: flex; gap: 2px;">
                             {% for vlan in interface.tagged_vlans %}
                                 <span style="
-                                    width: 6px; 
-                                    height: 6px; 
+                                    width: 7px; 
+                                    height: 7px; 
                                     border-radius: 50%; 
                                     background-color: {{ vlan.color }};
                                     display: inline-block;
@@ -149,6 +164,11 @@
                             {% endfor %}
                         </div>
                         {% endif %}
+                        
+                        <!-- Invisible clickable link overlay -->
+                        <a href="{% url 'dcim:interface' pk=interface.id %}" target="_blank" 
+                           class="interface-link"
+                           style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; opacity: 0;"></a>
                     </div>
                     {% endfor %}
                     
@@ -178,7 +198,6 @@
 <style>
     .interface-cell {
         transition: transform 0.1s, box-shadow 0.1s;
-        cursor: pointer;
     }
     
     .interface-cell:hover {
@@ -187,13 +206,22 @@
         z-index: 10;
     }
     
-    .interface-cell a {
-        color: inherit;
-        text-decoration: none;
+    .interface-cell.dragging {
+        opacity: 0.5;
     }
     
-    .interface-cell a:hover {
-        text-decoration: underline;
+    .interface-cell.drag-over {
+        border-style: dashed !important;
+        border-width: 3px !important;
+        background-color: #e7f3ff !important;
+    }
+    
+    .interface-link {
+        pointer-events: auto;
+    }
+    
+    .interface-cell[draggable="true"] .interface-link {
+        pointer-events: none;
     }
 </style>
 
@@ -203,7 +231,109 @@
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl)
-        })
+        });
+        
+        // Drag and drop functionality
+        const grid = document.getElementById('interface-grid');
+        const cells = document.querySelectorAll('.interface-cell');
+        let draggedElement = null;
+        
+        cells.forEach(cell => {
+            cell.addEventListener('dragstart', handleDragStart);
+            cell.addEventListener('dragover', handleDragOver);
+            cell.addEventListener('drop', handleDrop);
+            cell.addEventListener('dragenter', handleDragEnter);
+            cell.addEventListener('dragleave', handleDragLeave);
+            cell.addEventListener('dragend', handleDragEnd);
+        });
+        
+        function handleDragStart(e) {
+            draggedElement = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.innerHTML);
+        }
+        
+        function handleDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+        
+        function handleDragEnter(e) {
+            if (this !== draggedElement) {
+                this.classList.add('drag-over');
+            }
+        }
+        
+        function handleDragLeave(e) {
+            this.classList.remove('drag-over');
+        }
+        
+        function handleDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+            
+            if (draggedElement !== this) {
+                // Swap the elements
+                const draggedHTML = draggedElement.innerHTML;
+                const draggedDataId = draggedElement.getAttribute('data-interface-id');
+                const draggedDataName = draggedElement.getAttribute('data-interface-name');
+                const draggedTitle = draggedElement.getAttribute('title');
+                const draggedStyle = draggedElement.getAttribute('style');
+                
+                const targetHTML = this.innerHTML;
+                const targetDataId = this.getAttribute('data-interface-id');
+                const targetDataName = this.getAttribute('data-interface-name');
+                const targetTitle = this.getAttribute('title');
+                const targetStyle = this.getAttribute('style');
+                
+                // Swap content
+                draggedElement.innerHTML = targetHTML;
+                draggedElement.setAttribute('data-interface-id', targetDataId);
+                draggedElement.setAttribute('data-interface-name', targetDataName);
+                draggedElement.setAttribute('title', targetTitle);
+                draggedElement.setAttribute('style', targetStyle);
+                
+                this.innerHTML = draggedHTML;
+                this.setAttribute('data-interface-id', draggedDataId);
+                this.setAttribute('data-interface-name', draggedDataName);
+                this.setAttribute('title', draggedTitle);
+                this.setAttribute('style', draggedStyle);
+                
+                // Reinitialize tooltips for swapped elements
+                var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+                tooltipTriggerList.forEach(function(tooltipTriggerEl) {
+                    new bootstrap.Tooltip(tooltipTriggerEl);
+                });
+            }
+            
+            this.classList.remove('drag-over');
+            return false;
+        }
+        
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+            cells.forEach(cell => {
+                cell.classList.remove('drag-over');
+            });
+        }
+        
+        // Allow clicking on cells to navigate
+        cells.forEach(cell => {
+            cell.addEventListener('click', function(e) {
+                if (e.target.classList.contains('interface-link') || e.target.closest('.interface-link')) {
+                    return;
+                }
+                const link = this.querySelector('.interface-link');
+                if (link && !this.classList.contains('dragging')) {
+                    link.click();
+                }
+            });
+        });
     });
 </script>
 {% endblock %}
