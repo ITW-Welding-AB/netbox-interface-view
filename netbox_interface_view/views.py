@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404
 from django.views.generic import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.mixins import PermissionRequiredMixin
-from dcim.models import Device, Interface
+from dcim.models import Device, Interface, Rack
 from ipam.models import VLAN
 from utilities.views import register_model_view
 
@@ -111,3 +111,70 @@ class InterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
         }
         
         return render(request, 'netbox_interface_view/interface_grid.html', context)
+
+
+@register_model_view(Rack, name='rack-interface-grid')
+class RackInterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = ["dcim.view_rack", "dcim.view_device"]
+    template_name = "netbox_interface_view/rack_interface_grid.html"
+
+    def get(self, request, rack_id):
+        rack = get_object_or_404(Rack, pk=rack_id)
+        
+        # Get devices in the rack, ordered by position
+        devices_in_rack = Device.objects.filter(rack=rack).order_by('-position', 'face')
+
+        # Get all interfaces for all devices in the rack
+        all_interfaces = []
+        for device in devices_in_rack:
+            interfaces = Interface.objects.filter(device=device)
+            
+            for interface in interfaces:
+                all_interfaces.append(interface)
+
+        # Build interface data with VLAN colors and connection status
+        interface_list = []
+        for idx, interface in enumerate(all_interfaces):
+            # Get VLAN colors
+            untagged_vlan = None
+            tagged_vlans = []
+            
+            if interface.untagged_vlan:
+                vlan_color = interface.untagged_vlan.custom_field_data.get('color', '#cccccc')
+                untagged_vlan = {
+                    'id': interface.untagged_vlan.id,
+                    'vid': interface.untagged_vlan.vid,
+                    'name': interface.untagged_vlan.name,
+                    'color': vlan_color
+                }
+            
+            for vlan in interface.tagged_vlans.all():
+                vlan_color = vlan.custom_field_data.get('color', '#cccccc')
+                tagged_vlans.append({
+                    'id': vlan.id,
+                    'vid': vlan.vid,
+                    'name': vlan.name,
+                    'color': vlan_color
+                })
+            
+            # Check connection status
+            is_connected = interface.cable is not None
+            is_enabled = interface.enabled
+            
+            interface_list.append({
+                'id': interface.id,
+                'name': interface.name,
+                'device_name': interface.device.name,
+                'type': interface.type,
+                'description': interface.description,
+                'enabled': is_enabled,
+                'connected': is_connected,
+                'untagged_vlan': untagged_vlan,
+                'tagged_vlans': tagged_vlans,
+                'original_index': idx + 1,
+            })
+
+        return render(request, self.template_name, {
+            'rack': rack,
+            'interfaces': interface_list,
+        })

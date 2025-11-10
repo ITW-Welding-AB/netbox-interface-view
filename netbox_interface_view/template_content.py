@@ -19,5 +19,21 @@ class DeviceInterfaceGridButton(PluginTemplateExtension):
             url
         )
 
+class RackInterfaceGridButton(PluginTemplateExtension):
+    """Add Interface Grid View button to rack pages"""
+    
+    model = 'dcim.rack'
+    
+    def buttons(self):
+        """Add button to rack detail page"""
+        obj = self.context['object']
+        url = reverse('plugins:netbox_interface_view:rack_interface_grid', kwargs={'rack_id': obj.pk})
+        return format_html(
+            '<a href="{}" class="btn btn-sm btn-primary" title="View Rack Interface Grid">'
+            '<i class="mdi mdi-view-grid"></i> View Rack Interfaces'
+            '</a>',
+            url
+        )
 
-template_extensions = [DeviceInterfaceGridButton]
+
+template_extensions = [DeviceInterfaceGridButton, RackInterfaceGridButton]
