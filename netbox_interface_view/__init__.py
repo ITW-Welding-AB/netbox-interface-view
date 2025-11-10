@@ -1,11 +1,11 @@
-from extras.plugins import PluginConfig
+from netbox.plugins import PluginConfig
 
 
 class NetBoxInterfaceViewConfig(PluginConfig):
     name = 'netbox_interface_view'
     verbose_name = 'NetBox Interface View'
     description = 'NetBox Plugin for viewing interfaces in a grid layout with VLAN color-coding'
-    version = '0.1.0'
+    version = '0.1.1'
     base_url = 'interface-view'
     min_version = '3.5.0'
     
