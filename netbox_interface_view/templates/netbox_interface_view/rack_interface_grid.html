@@ -13,16 +13,36 @@
                     <i class="mdi mdi-arrow-left"></i> Back to Rack
                 </a>
             </div>
+        </div>
+    </div>
+
+    {% for device_data in devices_with_interfaces %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <a href="{{ device_data.device_url }}"><strong>{{ device_data.device_name }}</strong></a>
+        </div>
+        <div class="card-body">
+            <!-- Grid Info -->
+            <div class="alert alert-info">
+                <strong>Grid Configuration:</strong> {{ device_data.grid_rows }} rows × {{ device_data.grid_columns }} columns ({{ device_data.total_cells }} cells)
+                <br>
+                <strong>Interfaces Shown:</strong> {{ device_data.interfaces|length }}
+            </div>
 
             <!-- Interface Grid -->
-            <div class="interface-grid-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">
-                {% for interface in interfaces %}
+            <div class="interface-grid" style="
+                display: grid; 
+                grid-template-columns: repeat({{ device_data.grid_columns }}, 1fr);
+                gap: 4px;
+                margin-bottom: 20px;
+            ">
+                {% for interface in device_data.interfaces %}
                 <a href="{% url 'dcim:interface' pk=interface.id %}" target="_blank" class="grid-item-wrapper"
                     style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: inherit;">
-                    <!-- Device Name above this specific cell -->
+                    <!-- Port Number above this specific cell -->
                     <div
-                        style="text-align: center; font-size: 0.75em; color: #495057; font-weight: 600; margin-bottom: 2px;">
-                        {{ interface.device_name }}
+                        style="text-align: center; font-size: 0.65em; color: #495057; font-weight: 600; margin-bottom: 2px;">
+                        {{ interface.original_index }}
                     </div>
 
                     <!-- Interface Cell -->
@@ -30,7 +50,7 @@
                         data-interface-id="{{ interface.id }}" data-interface-index="{{ forloop.counter0 }}"
                         data-interface-name="{{ interface.name }}" data-interface-type="{{ interface.type }}"
                         data-bs-toggle="tooltip" data-bs-html="true"
-                        title="<strong>{{ interface.name }}</strong><br>
+                        title="<strong>Port {{ interface.original_index }}: {{ interface.name }}</strong><br>
                                 Type: {{ interface.type }}<br>
                                 {% if interface.untagged_vlan %}Untagged: VLAN {{ interface.untagged_vlan.vid }} ({{ interface.untagged_vlan.name }})<br>{% endif %}
                                 {% if interface.tagged_vlans %}Tagged: {% for vlan in interface.tagged_vlans %}VLAN {{ vlan.vid }}{% if not forloop.last %}, {% endif %}{% endfor %}<br>{% endif %}
@@ -59,11 +79,6 @@
                             {% endif %}
                         </div>
 
-                        <!-- Interface Name -->
-                        <div style="font-size: 0.8em; font-weight: bold; text-align: center; margin-top: 5px;">
-                            {{ interface.name }}
-                        </div>
-
                         <!-- Tagged VLANs dots (bottom) -->
                         {% if interface.tagged_vlans %}
                         <div
@@ -83,9 +98,37 @@
                     </div>
                 </a>
                 {% endfor %}
+
+                <!-- Empty cells to fill the grid -->
+                {% for i in device_data.empty_cells %}
+                <div class="grid-item-wrapper" style="display: flex; flex-direction: column; align-items: center;">
+                    <!-- Empty port number -->
+                    <div style="text-align: center; font-size: 0.65em; color: #dee2e6; margin-bottom: 2px;">
+                        {{ device_data.interfaces|length|add:forloop.counter }}
+                    </div>
+
+                    <!-- Empty Cell -->
+                    <div class="interface-cell-empty" style="
+                        border: 1px dashed #dee2e6;
+                        border-radius: 3px;
+                        padding: 4px;
+                        min-height: 45px;
+                        max-height: 45px;
+                        width: 100%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: #adb5bd;
+                    ">
+                        <span style="font-size: 0.6em;">—</span>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
         </div>
     </div>
+    {% if not forloop.last %}<hr>{% endif %}
+    {% endfor %}
 </div>
 
 <style>

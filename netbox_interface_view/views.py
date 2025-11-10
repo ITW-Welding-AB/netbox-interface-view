@@ -124,57 +124,72 @@ class RackInterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
         # Get devices in the rack, ordered by position
         devices_in_rack = Device.objects.filter(rack=rack).order_by('-position', 'face')
 
-        # Get all interfaces for all devices in the rack
-        all_interfaces = []
+        devices_with_interfaces = []
         for device in devices_in_rack:
-            interfaces = Interface.objects.filter(device=device)
+            # Get grid dimensions from custom fields (with defaults)
+            grid_rows = device.custom_field_data.get('grid_rows', 2)
+            grid_columns = device.custom_field_data.get('grid_columns', 24)
             
-            for interface in interfaces:
-                all_interfaces.append(interface)
-
-        # Build interface data with VLAN colors and connection status
-        interface_list = []
-        for idx, interface in enumerate(all_interfaces):
-            # Get VLAN colors
-            untagged_vlan = None
-            tagged_vlans = []
+            # Get all interfaces for this device
+            interfaces = Interface.objects.filter(device=device).order_by('name')
             
-            if interface.untagged_vlan:
-                vlan_color = interface.untagged_vlan.custom_field_data.get('color', '#cccccc')
-                untagged_vlan = {
-                    'id': interface.untagged_vlan.id,
-                    'vid': interface.untagged_vlan.vid,
-                    'name': interface.untagged_vlan.name,
-                    'color': vlan_color
-                }
-            
-            for vlan in interface.tagged_vlans.all():
-                vlan_color = vlan.custom_field_data.get('color', '#cccccc')
-                tagged_vlans.append({
-                    'id': vlan.id,
-                    'vid': vlan.vid,
-                    'name': vlan.name,
-                    'color': vlan_color
+            # Build interface data
+            interface_list = []
+            for idx, interface in enumerate(interfaces):
+                # Get VLAN colors
+                untagged_vlan = None
+                tagged_vlans = []
+                
+                if interface.untagged_vlan:
+                    vlan_color = interface.untagged_vlan.custom_field_data.get('color', '#cccccc')
+                    untagged_vlan = {
+                        'id': interface.untagged_vlan.id,
+                        'vid': interface.untagged_vlan.vid,
+                        'name': interface.untagged_vlan.name,
+                        'color': vlan_color
+                    }
+                
+                for vlan in interface.tagged_vlans.all():
+                    vlan_color = vlan.custom_field_data.get('color', '#cccccc')
+                    tagged_vlans.append({
+                        'id': vlan.id,
+                        'vid': vlan.vid,
+                        'name': vlan.name,
+                        'color': vlan_color
+                    })
+                
+                # Check connection status
+                is_connected = interface.cable is not None
+                is_enabled = interface.enabled
+                
+                interface_list.append({
+                    'id': interface.id,
+                    'name': interface.name,
+                    'device_name': interface.device.name,
+                    'type': interface.type,
+                    'description': interface.description,
+                    'enabled': is_enabled,
+                    'connected': is_connected,
+                    'untagged_vlan': untagged_vlan,
+                    'tagged_vlans': tagged_vlans,
+                    'original_index': idx + 1,
                 })
-            
-            # Check connection status
-            is_connected = interface.cable is not None
-            is_enabled = interface.enabled
-            
-            interface_list.append({
-                'id': interface.id,
-                'name': interface.name,
-                'device_name': interface.device.name,
-                'type': interface.type,
-                'description': interface.description,
-                'enabled': is_enabled,
-                'connected': is_connected,
-                'untagged_vlan': untagged_vlan,
-                'tagged_vlans': tagged_vlans,
-                'original_index': idx + 1,
+
+            # Calculate empty cells
+            empty_cells_count = max(0, (grid_rows * grid_columns) - len(interface_list))
+            empty_cells = range(empty_cells_count)
+
+            devices_with_interfaces.append({
+                'device_name': device.name,
+                'device_url': device.get_absolute_url(),
+                'interfaces': interface_list,
+                'grid_rows': grid_rows,
+                'grid_columns': grid_columns,
+                'total_cells': grid_rows * grid_columns,
+                'empty_cells': empty_cells,
             })
 
         return render(request, self.template_name, {
             'rack': rack,
-            'interfaces': interface_list,
+            'devices_with_interfaces': devices_with_interfaces,
         })
