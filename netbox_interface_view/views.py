@@ -130,8 +130,11 @@ class RackInterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
             grid_rows = device.custom_field_data.get('grid_rows', 2)
             grid_columns = device.custom_field_data.get('grid_columns', 24)
             
-            # Get all interfaces for this device
-            interfaces = Interface.objects.filter(device=device).order_by('name')
+            # Get all interfaces for this device and exclude virtual interfaces
+            interfaces = Interface.objects.filter(device=device).exclude(type='virtual').order_by('name')
+
+            if not interfaces:
+                continue
             
             # Build interface data
             interface_list = []
