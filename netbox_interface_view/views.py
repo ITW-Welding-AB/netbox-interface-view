@@ -24,7 +24,8 @@ class InterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
         grid_order = request.GET.get('grid_order', 'column-major')
         
         # Get filter parameters
-        filter_types = request.GET.getlist('exclude_type', [])
+        default_exclude = ['virtual']
+        filter_types = request.GET.getlist('exclude_type', default_exclude)
         
         # Get all interfaces for this device
         interfaces = Interface.objects.filter(device=device).order_by('name')
@@ -83,20 +84,19 @@ class InterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
         empty_cells_count = max(0, (grid_rows * grid_columns) - len(interface_list))
         empty_cells = range(empty_cells_count)
         
-        # For column-major display, keep interfaces in original order
-        # The template will render them in CSS grid which fills row by row
-        # So we need to transform positions to achieve column-major visual layout
-        # For a 2x24 grid with column-major: 1,2 in col1, 3,4 in col2, etc.
-        # This means we need to reorder: [1,2,3,4,5,6...] -> [1,3,5...2,4,6...]
+        # For column-major display, we need to reorder the list because CSS grid
+        # fills row by row. To achieve a column-major layout, we transform the
+        # list from [1, 2, 3, 4, 5, 6] to [1, 3, 5, 2, 4, 6] for a 2-row grid.
         if grid_order == 'column-major':
-            # Transform to column-major: split into rows, then interleave
-            reordered_interfaces = []
-            for col in range(grid_columns):
-                for row in range(grid_rows):
-                    idx = col * grid_rows + row
-                    if idx < len(interface_list):
-                        reordered_interfaces.append(interface_list[idx])
-            interface_list = reordered_interfaces
+            reordered_interfaces = [None] * len(interface_list)
+            for i, item in enumerate(interface_list):
+                row = i % grid_rows
+                col = i // grid_rows
+                new_index = row * grid_columns + col
+                if new_index < len(reordered_interfaces):
+                    reordered_interfaces[new_index] = item
+            # Filter out the None values which may appear if the list is not perfectly divisible
+            interface_list = [item for item in reordered_interfaces if item is not None]
         
         context = {
             'device': device,
