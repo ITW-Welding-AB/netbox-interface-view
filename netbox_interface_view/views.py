@@ -182,6 +182,16 @@ class RackInterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
             empty_cells_count = max(0, (grid_rows * grid_columns) - len(interface_list))
             empty_cells = range(empty_cells_count)
 
+            # Enforce column-major order
+            reordered_interfaces = [None] * len(interface_list)
+            for i, item in enumerate(interface_list):
+                row = i % grid_rows
+                col = i // grid_rows
+                new_index = row * grid_columns + col
+                if new_index < len(reordered_interfaces):
+                    reordered_interfaces[new_index] = item
+            interface_list = [item for item in reordered_interfaces if item is not None]
+
             devices_with_interfaces.append({
                 'device_name': device.name,
                 'device_url': device.get_absolute_url(),

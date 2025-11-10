@@ -6,7 +6,7 @@ from django.utils.html import format_html
 class DeviceInterfaceGridButton(PluginTemplateExtension):
     """Add Interface Grid View button to device pages"""
     
-    model = 'dcim.device'
+    models = ('dcim.device',)
     
     def buttons(self):
         """Add button to device detail page"""
@@ -22,7 +22,7 @@ class DeviceInterfaceGridButton(PluginTemplateExtension):
 class RackInterfaceGridButton(PluginTemplateExtension):
     """Add Interface Grid View button to rack pages"""
     
-    model = 'dcim.rack'
+    models = ("dcim.rack",)
     
     def buttons(self):
         """Add button to rack detail page"""
