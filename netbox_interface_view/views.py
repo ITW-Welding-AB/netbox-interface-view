@@ -1,12 +1,18 @@
 from django.shortcuts import render, get_object_or_404
-from django.views import View
+from django.views.generic import View
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import PermissionRequiredMixin
 from dcim.models import Device, Interface
 from ipam.models import VLAN
+from utilities.views import register_model_view
 
 
-class InterfaceGridView(View):
-    """View for displaying device interfaces in a grid layout"""
-    
+@register_model_view(Device, name='interface-grid')
+class InterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = ["dcim.change_device", "dcim.view_device"]
+    template_name = "netbox_interface_view/interface_grid.html"
+
+
     def get(self, request, device_id):
         device = get_object_or_404(Device, pk=device_id)
         

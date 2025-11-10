@@ -8,7 +8,7 @@ except (IOError, FileNotFoundError):
 
 setup(
     name='netbox-interface-view',
-    version='0.1.1',
+    version='0.1.2',
     description='NetBox Plugin for viewing interfaces in a grid layout with VLAN color-coding',
     long_description=long_description,
     long_description_content_type='text/markdown',
