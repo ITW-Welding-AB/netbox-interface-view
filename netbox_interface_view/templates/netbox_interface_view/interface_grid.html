@@ -212,21 +212,14 @@
 <style>
     .interface-cell {
         transition: transform 0.1s, box-shadow 0.1s;
-        background-color: #f8f9fa;
+        background-color: var(--tblr-bg-surface-tertiary);
     }
 
     .interface-cell-empty {
-        background-color: #ffffff;
-    }
-
-    html[data-theme="dark"] .interface-cell {
-        background-color: #2c3238;
-        /* Darker background for cells */
+        background-color: var(--tblr-bg-surface-tertiary);
     }
 
     html[data-theme="dark"] .interface-cell-empty {
-        background-color: #1c2023;
-        /* Even darker for empty cells */
         border-color: #3a4249 !important;
     }
 
