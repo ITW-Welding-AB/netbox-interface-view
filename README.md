@@ -1,4 +1,4 @@
-# netbox-plugin-interface-view
+# netbox-interface-view
 
 NetBox Plugin for viewing device interfaces in a stylish grid layout that mimics the physical port arrangement.
 
@@ -16,7 +16,7 @@ NetBox Plugin for viewing device interfaces in a stylish grid layout that mimics
 
 1. Install the plugin:
 ```bash
-pip install netbox-plugin-interface-view
+pip install netbox-interface-view
 ```
 
 2. Add the plugin to your NetBox configuration (`configuration.py`):
