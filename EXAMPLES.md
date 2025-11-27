@@ -7,10 +7,12 @@ This document provides examples of how to use the NetBox Interface View plugin.
 For a typical 48-port network switch with ports arranged in 2 rows:
 
 **Configuration:**
+
 - Device Custom Field `grid_rows`: `2`
 - Device Custom Field `grid_columns`: `24`
 
 This will create a grid that looks like:
+
 ```
 [Port 1 ] [Port 2 ] [Port 3 ] ... [Port 24]
 [Port 25] [Port 26] [Port 27] ... [Port 48]
@@ -21,10 +23,12 @@ This will create a grid that looks like:
 For a 24-port switch with ports arranged in 3 rows:
 
 **Configuration:**
+
 - Device Custom Field `grid_rows`: `3`
 - Device Custom Field `grid_columns`: `8`
 
 This will create a grid that looks like:
+
 ```
 [Port 1] [Port 2] [Port 3] ... [Port 8 ]
 [Port 9] [Port 10] [Port 11] ... [Port 16]
@@ -35,15 +39,15 @@ This will create a grid that looks like:
 
 Here's a recommended color scheme for different VLAN types:
 
-| VLAN Type | Purpose | Hex Color | Visual |
-|-----------|---------|-----------|--------|
-| Management | Network device management | `#0066CC` | Blue |
-| Data | User data traffic | `#00CC66` | Green |
-| Voice | VoIP traffic | `#FF9900` | Orange |
-| Guest | Guest network | `#9966CC` | Purple |
-| Server | Server VLAN | `#CC0000` | Red |
-| DMZ | Demilitarized zone | `#FFCC00` | Yellow |
-| Storage | Storage network | `#00CCCC` | Cyan |
+| VLAN Type  | Purpose                   | Hex Color | Visual |
+| ---------- | ------------------------- | --------- | ------ |
+| Management | Network device management | `#0066CC` | Blue   |
+| Data       | User data traffic         | `#00CC66` | Green  |
+| Voice      | VoIP traffic              | `#FF9900` | Orange |
+| Guest      | Guest network             | `#9966CC` | Purple |
+| Server     | Server VLAN               | `#CC0000` | Red    |
+| DMZ        | Demilitarized zone        | `#FFCC00` | Yellow |
+| Storage    | Storage network           | `#00CCCC` | Cyan   |
 
 ## Example 4: Filtering Interfaces
 
@@ -75,10 +79,12 @@ Each interface cell shows VLAN information:
 - **Small Colored Dots**: Each dot represents a tagged VLAN
 
 For example, an interface with:
+
 - Untagged VLAN 10 (blue, `#0066CC`)
 - Tagged VLANs 20 (green, `#00CC66`) and 30 (orange, `#FF9900`)
 
 Would display with:
+
 - A blue border
 - Two small dots (one green, one orange) in the cell
 
@@ -119,15 +125,19 @@ Would display with:
 ## Troubleshooting Common Issues
 
 ### Issue: Grid doesn't match physical layout
+
 **Solution**: Adjust the `grid_rows` and `grid_columns` custom fields on the device to match the actual port layout.
 
 ### Issue: All interfaces show gray
+
 **Solution**: VLANs need the `color` custom field set. Edit each VLAN and add a hex color code.
 
 ### Issue: Too many empty cells
+
 **Solution**: Reduce the grid dimensions to better match the number of interfaces on the device.
 
 ### Issue: Can't see physical ports
+
 **Solution**: Use the interface type filter to exclude virtual, LAG, and other logical interface types.
 
 ## Advanced Usage

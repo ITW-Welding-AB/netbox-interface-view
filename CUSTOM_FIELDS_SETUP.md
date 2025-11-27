@@ -5,8 +5,9 @@ This document provides detailed instructions for setting up the required custom 
 ## Overview
 
 The plugin requires three custom fields to function properly:
+
 1. **grid_rows** - on Device model
-2. **grid_columns** - on Device model  
+2. **grid_columns** - on Device model
 3. **color** - on VLAN model
 
 ## Method 1: Via NetBox Web UI
@@ -46,7 +47,7 @@ The plugin requires three custom fields to function properly:
    - **Description**: `Number of columns in the interface grid layout`
    - **Validation minimum**: `1`
    - **Validation maximum**: `100`
-5. Click **Create**
+4. Click **Create**
 
 ### Step 2: Create VLAN Custom Field
 
@@ -209,6 +210,7 @@ curl -X POST "${NETBOX_URL}/api/extras/custom-fields/" \
 5. Click **Save**
 
 **Recommended VLAN Colors:**
+
 - Management VLAN: `#0066CC` (blue)
 - Data VLAN: `#00CC66` (green)
 - Voice VLAN: `#FF9900` (orange)
@@ -227,16 +229,19 @@ After creating the custom fields:
 ## Troubleshooting
 
 ### Button not appearing
+
 - Ensure the plugin is installed and configured in `configuration.py`
 - Restart NetBox services: `sudo systemctl restart netbox netbox-rq`
 - Check that the device has at least one interface
 
 ### Grid not displaying correctly
+
 - Verify custom field values on the device
 - Ensure `grid_rows` and `grid_columns` are positive integers
 - Check browser console for JavaScript errors
 
 ### VLAN colors not showing
+
 - Verify the `color` custom field is created on the VLAN model
 - Ensure color values are valid hex codes (e.g., `#FF5733`)
 - Check that VLANs are assigned to interfaces (untagged or tagged)

@@ -24,7 +24,8 @@
         <div class="card-body">
             <!-- Grid Info -->
             <div class="alert alert-info">
-                <strong>Grid Configuration:</strong> {{ device_data.grid_rows }} rows × {{ device_data.grid_columns }} columns ({{ device_data.total_cells }} cells)
+                <strong>Grid Configuration:</strong> {{ device_data.grid_rows }} rows × {{ device_data.grid_columns }}
+                columns ({{ device_data.total_cells }} cells)
                 <br>
                 <strong>Interfaces Shown:</strong> {{ device_data.interfaces|length }}
             </div>
@@ -37,7 +38,7 @@
                 margin-bottom: 20px;
             ">
                 {% for interface in device_data.interfaces %}
-                <a href="{% url 'dcim:interface' pk=interface.id %}" target="_blank" class="grid-item-wrapper"
+                <a href="{{ interface.url }}" target="_blank" class="grid-item-wrapper"
                     style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: inherit;">
                     <!-- Port Number above this specific cell -->
                     <div
@@ -127,7 +128,8 @@
             </div>
         </div>
     </div>
-    {% if not forloop.last %}<hr>{% endif %}
+    {% if not forloop.last %}
+    <hr>{% endif %}
     {% endfor %}
 </div>
 

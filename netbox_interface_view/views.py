@@ -1,8 +1,9 @@
 from django.shortcuts import render, get_object_or_404
+from django.urls import reverse
 from django.views.generic import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.mixins import PermissionRequiredMixin
-from dcim.models import Device, Interface, Rack
+from dcim.models import Device, Interface, Rack, FrontPort
 from ipam.models import VLAN
 from utilities.views import register_model_view
 
@@ -29,14 +30,16 @@ class InterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
         
         # Get all interfaces for this device
         interfaces = Interface.objects.filter(device=device).order_by('name')
+        frontports = FrontPort.objects.filter(device=device).order_by('name')
         
         # Apply type filters
         if filter_types:
             interfaces = interfaces.exclude(type__in=filter_types)
+            frontports = frontports.exclude(type__in=filter_types)
         
         # Build interface data with VLAN colors and connection status
         interface_list = []
-        for idx, interface in enumerate(interfaces):
+        for interface in interfaces:
             # Get VLAN colors
             untagged_vlan = None
             tagged_vlans = []
@@ -72,7 +75,24 @@ class InterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
                 'connected': is_connected,
                 'untagged_vlan': untagged_vlan,
                 'tagged_vlans': tagged_vlans,
-                'original_index': idx + 1,  # 1-based index for display
+                'original_index': len(interface_list) + 1,  # 1-based index for display
+                'url': reverse('dcim:interface', kwargs={'pk': interface.pk}),
+            })
+
+        for fp in frontports:
+            is_connected = fp.cable is not None
+            
+            interface_list.append({
+                'id': fp.id,
+                'name': fp.name,
+                'type': fp.type,
+                'description': fp.description,
+                'enabled': True,
+                'connected': is_connected,
+                'untagged_vlan': None,
+                'tagged_vlans': [],
+                'original_index': len(interface_list) + 1,
+                'url': reverse('dcim:frontport', kwargs={'pk': fp.pk}),
             })
         
         # Get unique interface types for filter dropdown
@@ -132,13 +152,14 @@ class RackInterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
             
             # Get all interfaces for this device and exclude virtual interfaces
             interfaces = Interface.objects.filter(device=device).exclude(type='virtual').order_by('name')
+            frontports = FrontPort.objects.filter(device=device).order_by('name')
 
-            if not interfaces:
+            if not interfaces and not frontports:
                 continue
             
             # Build interface data
             interface_list = []
-            for idx, interface in enumerate(interfaces):
+            for interface in interfaces:
                 # Get VLAN colors
                 untagged_vlan = None
                 tagged_vlans = []
@@ -175,7 +196,25 @@ class RackInterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     'connected': is_connected,
                     'untagged_vlan': untagged_vlan,
                     'tagged_vlans': tagged_vlans,
-                    'original_index': idx + 1,
+                    'original_index': len(interface_list) + 1,
+                    'url': reverse('dcim:interface', kwargs={'pk': interface.pk}),
+                })
+
+            for fp in frontports:
+                is_connected = fp.cable is not None
+                
+                interface_list.append({
+                    'id': fp.id,
+                    'name': fp.name,
+                    'device_name': fp.device.name,
+                    'type': fp.type,
+                    'description': fp.description,
+                    'enabled': True,
+                    'connected': is_connected,
+                    'untagged_vlan': None,
+                    'tagged_vlans': [],
+                    'original_index': len(interface_list) + 1,
+                    'url': reverse('dcim:frontport', kwargs={'pk': fp.pk}),
                 })
 
             # Calculate empty cells

@@ -35,10 +35,10 @@
                             <div class="col-md-4">
                                 <label>Grid Order:</label>
                                 <select name="grid_order" class="form-control" id="grid-order">
-                                    <option value="column-major" {% if grid_order == 'column-major' %}selected{% endif %}>
+                                    <option value="column-major" {% if grid_order=='column-major' %}selected{% endif %}>
                                         Column-Major (Vertical: 1,2 | 3,4 | 5,6)
                                     </option>
-                                    <option value="row-major" {% if grid_order == 'row-major' %}selected{% endif %}>
+                                    <option value="row-major" {% if grid_order=='row-major' %}selected{% endif %}>
                                         Row-Major (Horizontal: 1,2,3 | 4,5,6)
                                     </option>
                                 </select>
@@ -55,11 +55,13 @@
 
             <!-- Grid Info -->
             <div class="alert alert-info">
-                <strong>Grid Configuration:</strong> {{ grid_rows }} rows × {{ grid_columns }} columns ({{ total_cells }} cells)
+                <strong>Grid Configuration:</strong> {{ grid_rows }} rows × {{ grid_columns }} columns ({{ total_cells
+                }} cells)
                 <br>
                 <strong>Interfaces Shown:</strong> {{ interfaces|length }}
                 <br>
-                <small>Configure grid dimensions using custom fields 'grid_rows' and 'grid_columns' on the device.</small>
+                <small>Configure grid dimensions using custom fields 'grid_rows' and 'grid_columns' on the
+                    device.</small>
             </div>
 
             <!-- Helper -->
@@ -116,7 +118,7 @@
                 ">
                     {% for interface in interfaces %}
                     <!-- Each grid item is a clickable link that wraps the content -->
-                    <a href="{% url 'dcim:interface' pk=interface.id %}" target="_blank" class="grid-item-wrapper"
+                    <a href="{{ interface.url }}" target="_blank" class="grid-item-wrapper"
                         style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: inherit;">
                         <!-- Port Number above this specific cell -->
                         <div
