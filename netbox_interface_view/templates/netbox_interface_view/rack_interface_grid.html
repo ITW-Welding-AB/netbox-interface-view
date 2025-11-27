@@ -60,9 +60,14 @@
                         style="
                             border: 3px solid {{ interface.untagged_vlan.color|default:'#cccccc' }};
                             padding: 3px;
+                            {% if interface.is_compact %}
+                            height: 77px;
+                            width: 73px;
+                            {% else %}
                             min-height: 85px;
                             max-height: 85px;
                             width: 100%;
+                            {% endif %}
                             display: flex;
                             flex-direction: column;
                             position: relative;

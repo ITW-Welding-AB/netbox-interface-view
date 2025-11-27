@@ -8,6 +8,11 @@ from ipam.models import VLAN
 from utilities.views import register_model_view
 
 
+def is_compact_type(type_str):
+    compact_keywords = ['base', 'sfp', '8p8c', 'lc', 'sc', 'fc', 'mpo']
+    return any(keyword in type_str for keyword in compact_keywords)
+
+
 @register_model_view(Device, name='interface-grid')
 class InterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
     permission_required = ["dcim.change_device", "dcim.view_device"]
@@ -77,6 +82,7 @@ class InterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
                 'tagged_vlans': tagged_vlans,
                 'original_index': len(interface_list) + 1,  # 1-based index for display
                 'url': reverse('dcim:interface', kwargs={'pk': interface.pk}),
+                'is_compact': is_compact_type(interface.type),
             })
 
         for fp in frontports:
@@ -93,6 +99,7 @@ class InterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
                 'tagged_vlans': [],
                 'original_index': len(interface_list) + 1,
                 'url': reverse('dcim:frontport', kwargs={'pk': fp.pk}),
+                'is_compact': is_compact_type(fp.type),
             })
         
         # Get unique interface types for filter dropdown
@@ -198,6 +205,7 @@ class RackInterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     'tagged_vlans': tagged_vlans,
                     'original_index': len(interface_list) + 1,
                     'url': reverse('dcim:interface', kwargs={'pk': interface.pk}),
+                    'is_compact': is_compact_type(interface.type),
                 })
 
             for fp in frontports:
@@ -215,6 +223,7 @@ class RackInterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     'tagged_vlans': [],
                     'original_index': len(interface_list) + 1,
                     'url': reverse('dcim:frontport', kwargs={'pk': fp.pk}),
+                    'is_compact': is_compact_type(fp.type),
                 })
 
             # Calculate empty cells
