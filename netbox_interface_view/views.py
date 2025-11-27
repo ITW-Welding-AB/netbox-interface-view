@@ -15,7 +15,7 @@ def is_compact_type(type_str):
 
 @register_model_view(Device, name='interface-grid')
 class InterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
-    permission_required = ["dcim.change_device", "dcim.view_device"]
+    permission_required = ["dcim.view_device"]
     template_name = "netbox_interface_view/interface_grid.html"
 
 
