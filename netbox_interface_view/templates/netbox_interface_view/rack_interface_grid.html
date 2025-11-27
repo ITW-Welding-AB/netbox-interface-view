@@ -4,17 +4,26 @@
 {% block title %}Rack Interface Grid - {{ rack.name }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
+<div class="container-fluid" style="position: relative;">
     <div class="row">
         <div class="col-md-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h1>Rack Interface Grid: {{ rack.name }}</h1>
-                <a href="{% url 'dcim:rack' pk=rack.pk %}" class="btn btn-secondary">
-                    <i class="mdi mdi-arrow-left"></i> Back to Rack
-                </a>
+                <div>
+                    <div class="form-check form-switch d-inline-block me-3">
+                        <input class="form-check-input" type="checkbox" id="showCablesToggle">
+                        <label class="form-check-label" for="showCablesToggle">Show Cables</label>
+                    </div>
+                    <a href="{% url 'dcim:rack' pk=rack.pk %}" class="btn btn-secondary">
+                        <i class="mdi mdi-arrow-left"></i> Back to Rack
+                    </a>
+                </div>
             </div>
         </div>
     </div>
+
+    <svg id="cable-overlay"
+        style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 10; display: none;"></svg>
 
     {% for device_data in devices_with_interfaces %}
     <div class="card mb-4">
@@ -33,9 +42,10 @@
             <!-- Interface Grid -->
             <div class="interface-grid" style="
                 display: grid; 
-                grid-template-columns: repeat({{ device_data.grid_columns }}, 1fr);
-                gap: 4px;
+                grid-template-columns: repeat({{ device_data.grid_columns }}, minmax(40px, 80px));
+                gap: 2px;
                 margin-bottom: 20px;
+                width: fit-content;
             ">
                 {% for interface in device_data.interfaces %}
                 <a href="{{ interface.url }}" target="_blank" class="grid-item-wrapper"
@@ -48,16 +58,17 @@
 
                     <!-- Interface Cell -->
                     <div class="interface-cell interface-type-{{ interface.type }}"
-                        data-interface-id="{{ interface.id }}" data-interface-index="{{ forloop.counter0 }}"
-                        data-interface-name="{{ interface.name }}" data-interface-type="{{ interface.type }}"
-                        data-bs-toggle="tooltip" data-bs-html="true"
+                        id="{{ interface.model_type }}-{{ interface.id }}"
+                        data-connected-endpoint-id="{{ interface.connected_endpoint_id|default:'' }}"
+                        data-cable-color="{{ interface.cable_color|default:'' }}" data-interface-id="{{ interface.id }}"
+                        data-interface-index="{{ forloop.counter0 }}" data-interface-name="{{ interface.name }}"
+                        data-interface-type="{{ interface.type }}" data-bs-toggle="tooltip" data-bs-html="true"
                         title="<strong>Port {{ interface.original_index }}: {{ interface.name }}</strong><br>
                                 Type: {{ interface.type }}<br>
                                 {% if interface.untagged_vlan %}Untagged: VLAN {{ interface.untagged_vlan.vid }} ({{ interface.untagged_vlan.name }})<br>{% endif %}
                                 {% if interface.tagged_vlans %}Tagged: {% for vlan in interface.tagged_vlans %}VLAN {{ vlan.vid }}{% if not forloop.last %}, {% endif %}{% endfor %}<br>{% endif %}
                                 {% if interface.description %}{{ interface.description }}<br>{% endif %}
-                                Status: {% if interface.connected and interface.enabled %}Connected & Enabled{% elif not interface.enabled %}Disabled{% else %}Disconnected{% endif %}"
-                        style="
+                                Status: {% if interface.connected and interface.enabled %}Connected & Enabled{% elif not interface.enabled %}Disabled{% else %}Disconnected{% endif %}" style="
                             border: 3px solid {{ interface.untagged_vlan.color|default:'#cccccc' }};
                             padding: 3px;
                             {% if interface.is_compact %}
@@ -272,6 +283,101 @@
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl)
         });
+    });
+
+    // Cable visualization
+    document.addEventListener('DOMContentLoaded', function () {
+        const toggle = document.getElementById('showCablesToggle');
+        const svg = document.getElementById('cable-overlay');
+        const container = document.querySelector('.container-fluid');
+
+        function highlightPath(path, startElem, endElem) {
+            if (!path) return;
+            path.setAttribute('stroke-width', '5');
+            path.style.opacity = '1';
+            const color = path.getAttribute('stroke');
+            startElem.style.boxShadow = '0 0 10px ' + color;
+            endElem.style.boxShadow = '0 0 10px ' + color;
+        }
+
+        function unhighlightPath(path, startElem, endElem) {
+            if (!path) return;
+            path.setAttribute('stroke-width', '2');
+            path.style.opacity = '0.6';
+            startElem.style.boxShadow = '';
+            endElem.style.boxShadow = '';
+        }
+
+        function drawCables() {
+            svg.innerHTML = ''; // Clear existing
+            if (!toggle.checked) {
+                svg.style.display = 'none';
+                return;
+            }
+            svg.style.display = 'block';
+
+            svg.setAttribute('width', window.innerWidth);
+            svg.setAttribute('height', window.innerHeight);
+
+            const interfaces = document.querySelectorAll('.interface-cell[data-connected-endpoint-id]');
+            const drawnConnections = new Set();
+
+            interfaces.forEach(iface => {
+                const startId = iface.id;
+                const endId = iface.dataset.connectedEndpointId;
+
+                if (!endId) return;
+
+                const connectionKey = [startId, endId].sort().join('-');
+                if (drawnConnections.has(connectionKey)) return;
+
+                const target = document.getElementById(endId);
+                if (target) {
+                    drawnConnections.add(connectionKey);
+                    const path = drawLine(iface, target, iface.dataset.cableColor);
+
+                    iface.onmouseenter = () => highlightPath(path, iface, target);
+                    iface.onmouseleave = () => unhighlightPath(path, iface, target);
+                    target.onmouseenter = () => highlightPath(path, iface, target);
+                    target.onmouseleave = () => unhighlightPath(path, iface, target);
+                }
+            });
+        }
+
+        function drawLine(startElem, endElem, color) {
+            const startRect = startElem.getBoundingClientRect();
+            const endRect = endElem.getBoundingClientRect();
+
+            // Use viewport-relative coordinates since SVG is fixed
+            const x1 = startRect.left + startRect.width / 2;
+            const y1 = startRect.top + startRect.height / 2;
+            const x2 = endRect.left + endRect.width / 2;
+            const y2 = endRect.top + endRect.height / 2;
+
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+
+            const dy = Math.abs(y2 - y1);
+            const controlPointOffset = Math.max(dy / 2, 50);
+            const d = `M ${x1} ${y1} C ${x1} ${y1 + controlPointOffset}, ${x2} ${y2 - controlPointOffset}, ${x2} ${y2}`;
+
+            path.setAttribute('d', d);
+            path.setAttribute('stroke', color || '#000000');
+            path.setAttribute('stroke-width', '2');
+            path.setAttribute('fill', 'none');
+            path.setAttribute('style', 'pointer-events: stroke; cursor: pointer; opacity: 0.6; transition: opacity 0.2s, stroke-width 0.2s;');
+
+            path.addEventListener('mouseenter', () => highlightPath(path, startElem, endElem));
+            path.addEventListener('mouseleave', () => unhighlightPath(path, startElem, endElem));
+
+            svg.appendChild(path);
+            return path;
+        }
+
+        if (toggle) {
+            toggle.addEventListener('change', drawCables);
+        }
+        window.addEventListener('resize', drawCables);
+        window.addEventListener('scroll', drawCables);
     });
 </script>
 {% endblock %}

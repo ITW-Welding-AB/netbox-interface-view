@@ -192,6 +192,23 @@ class RackInterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
                 # Check connection status
                 is_connected = interface.cable is not None
                 is_enabled = interface.enabled
+                cable_color = None
+                connected_endpoint_id = None
+                
+                if is_connected:
+                    cable = interface.cable
+                    cable_color = cable.color
+                    
+                    # Find the other end
+                    if interface in cable.a_terminations.all():
+                        terminations = cable.b_terminations.all()
+                    else:
+                        terminations = cable.a_terminations.all()
+                        
+                    if terminations:
+                        peer = terminations[0]
+                        peer_type = peer.__class__.__name__.lower()
+                        connected_endpoint_id = f"{peer_type}-{peer.id}"
                 
                 interface_list.append({
                     'id': interface.id,
@@ -201,6 +218,9 @@ class RackInterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     'description': interface.description,
                     'enabled': is_enabled,
                     'connected': is_connected,
+                    'cable_color': cable_color,
+                    'connected_endpoint_id': connected_endpoint_id,
+                    'model_type': 'interface',
                     'untagged_vlan': untagged_vlan,
                     'tagged_vlans': tagged_vlans,
                     'original_index': len(interface_list) + 1,
@@ -210,6 +230,22 @@ class RackInterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
 
             for fp in frontports:
                 is_connected = fp.cable is not None
+                cable_color = None
+                connected_endpoint_id = None
+                
+                if is_connected:
+                    cable = fp.cable
+                    cable_color = cable.color
+                    
+                    if fp in cable.a_terminations.all():
+                        terminations = cable.b_terminations.all()
+                    else:
+                        terminations = cable.a_terminations.all()
+                        
+                    if terminations:
+                        peer = terminations[0]
+                        peer_type = peer.__class__.__name__.lower()
+                        connected_endpoint_id = f"{peer_type}-{peer.id}"
                 
                 interface_list.append({
                     'id': fp.id,
@@ -219,6 +255,9 @@ class RackInterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     'description': fp.description,
                     'enabled': True,
                     'connected': is_connected,
+                    'cable_color': cable_color,
+                    'connected_endpoint_id': connected_endpoint_id,
+                    'model_type': 'frontport',
                     'untagged_vlan': None,
                     'tagged_vlans': [],
                     'original_index': len(interface_list) + 1,
