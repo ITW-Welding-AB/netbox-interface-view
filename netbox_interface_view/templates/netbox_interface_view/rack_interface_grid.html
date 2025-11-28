@@ -304,8 +304,8 @@
             path.setAttribute('stroke-width', '5');
             path.style.opacity = '1';
             const color = path.getAttribute('stroke');
-            startElem.style.boxShadow = '0 0 10px #' + color;
-            endElem.style.boxShadow = '0 0 10px #' + color;
+            startElem.style.boxShadow = '0 0 10px ' + color;
+            endElem.style.boxShadow = '0 0 10px ' + color;
         }
 
         function unhighlightPath(path, startElem, endElem) {
@@ -319,12 +319,12 @@
         function highlightMultiPath(paths, startElem, endElems) {
             if (!paths || paths.length === 0) return;
             const color = paths[0].getAttribute('stroke');
-            startElem.style.boxShadow = '0 0 10px #' + color;
+            startElem.style.boxShadow = '0 0 10px ' + color;
             paths.forEach((path, i) => {
                 path.setAttribute('stroke-width', '5');
                 path.style.opacity = '1';
                 if (endElems[i]) {
-                    endElems[i].style.boxShadow = '0 0 10px #' + color;
+                    endElems[i].style.boxShadow = '0 0 10px ' + color;
                 }
             });
         }
@@ -426,7 +426,7 @@
             const d = `M ${x1} ${y1} C ${x1} ${y1 + controlPointOffset}, ${x2} ${y2 - controlPointOffset}, ${x2} ${y2}`;
 
             path.setAttribute('d', d);
-            path.setAttribute('stroke', color || '000000');
+            path.setAttribute('stroke', "#" + color || '#000000');
             path.setAttribute('stroke-width', '2');
             path.setAttribute('fill', 'none');
             path.setAttribute('style', 'pointer-events: stroke; cursor: pointer; opacity: 0.6; transition: opacity 0.2s, stroke-width 0.2s;');
