@@ -70,6 +70,28 @@ class InterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
             # Check connection status
             is_connected = interface.cable is not None
             is_enabled = interface.enabled
+            cable_color = None
+            connected_endpoints = []
+            
+            if is_connected:
+                cable = interface.cable
+                cable_color = cable.color
+                
+                # Find the other end(s) - handle multiple terminations
+                if interface in cable.a_terminations:
+                    terminations = cable.b_terminations
+                else:
+                    terminations = cable.a_terminations
+                    
+                # Collect all connected endpoints
+                for peer in terminations:
+                    peer_type = peer.__class__.__name__.lower()
+                    connected_endpoints.append({
+                        'id': f"{peer_type}-{peer.id}",
+                        'name': peer.name,
+                        'type': peer_type,
+                        'device_name': getattr(peer, 'device', None) and peer.device.name or ''
+                    })
             
             interface_list.append({
                 'id': interface.id,
@@ -78,6 +100,8 @@ class InterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
                 'description': interface.description,
                 'enabled': is_enabled,
                 'connected': is_connected,
+                'cable_color': cable_color,
+                'connected_endpoints': connected_endpoints,
                 'untagged_vlan': untagged_vlan,
                 'tagged_vlans': tagged_vlans,
                 'original_index': len(interface_list) + 1,  # 1-based index for display
@@ -87,6 +111,28 @@ class InterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
 
         for fp in frontports:
             is_connected = fp.cable is not None
+            cable_color = None
+            connected_endpoints = []
+            
+            if is_connected:
+                cable = fp.cable
+                cable_color = cable.color
+                
+                # Find the other end(s) - handle multiple terminations
+                if fp in cable.a_terminations:
+                    terminations = cable.b_terminations
+                else:
+                    terminations = cable.a_terminations
+                    
+                # Collect all connected endpoints
+                for peer in terminations:
+                    peer_type = peer.__class__.__name__.lower()
+                    connected_endpoints.append({
+                        'id': f"{peer_type}-{peer.id}",
+                        'name': peer.name,
+                        'type': peer_type,
+                        'device_name': getattr(peer, 'device', None) and peer.device.name or ''
+                    })
             
             interface_list.append({
                 'id': fp.id,
@@ -95,6 +141,8 @@ class InterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
                 'description': fp.description,
                 'enabled': True,
                 'connected': is_connected,
+                'cable_color': cable_color,
+                'connected_endpoints': connected_endpoints,
                 'untagged_vlan': None,
                 'tagged_vlans': [],
                 'original_index': len(interface_list) + 1,
@@ -193,22 +241,29 @@ class RackInterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
                 is_connected = interface.cable is not None
                 is_enabled = interface.enabled
                 cable_color = None
-                connected_endpoint_id = None
+                cable_id = None
+                connected_endpoints = []
                 
                 if is_connected:
                     cable = interface.cable
                     cable_color = cable.color
+                    cable_id = cable.id
                     
-                    # Find the other end
+                    # Find the other end(s) - handle multiple terminations
                     if interface in cable.a_terminations:
                         terminations = cable.b_terminations
                     else:
                         terminations = cable.a_terminations
                         
-                    if terminations:
-                        peer = terminations[0]
+                    # Collect all connected endpoints
+                    for peer in terminations:
                         peer_type = peer.__class__.__name__.lower()
-                        connected_endpoint_id = f"{peer_type}-{peer.id}"
+                        connected_endpoints.append({
+                            'id': f"{peer_type}-{peer.id}",
+                            'name': peer.name,
+                            'type': peer_type,
+                            'device_name': getattr(peer, 'device', None) and peer.device.name or ''
+                        })
                 
                 interface_list.append({
                     'id': interface.id,
@@ -219,7 +274,8 @@ class RackInterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     'enabled': is_enabled,
                     'connected': is_connected,
                     'cable_color': cable_color,
-                    'connected_endpoint_id': connected_endpoint_id,
+                    'cable_id': cable_id,
+                    'connected_endpoints': connected_endpoints,
                     'model_type': 'interface',
                     'untagged_vlan': untagged_vlan,
                     'tagged_vlans': tagged_vlans,
@@ -231,21 +287,29 @@ class RackInterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
             for fp in frontports:
                 is_connected = fp.cable is not None
                 cable_color = None
-                connected_endpoint_id = None
+                cable_id = None
+                connected_endpoints = []
                 
                 if is_connected:
                     cable = fp.cable
                     cable_color = cable.color
+                    cable_id = cable.id
                     
+                    # Find the other end(s) - handle multiple terminations
                     if fp in cable.a_terminations:
                         terminations = cable.b_terminations
                     else:
                         terminations = cable.a_terminations
                         
-                    if terminations:
-                        peer = terminations[0]
+                    # Collect all connected endpoints
+                    for peer in terminations:
                         peer_type = peer.__class__.__name__.lower()
-                        connected_endpoint_id = f"{peer_type}-{peer.id}"
+                        connected_endpoints.append({
+                            'id': f"{peer_type}-{peer.id}",
+                            'name': peer.name,
+                            'type': peer_type,
+                            'device_name': getattr(peer, 'device', None) and peer.device.name or ''
+                        })
                 
                 interface_list.append({
                     'id': fp.id,
@@ -256,7 +320,8 @@ class RackInterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     'enabled': True,
                     'connected': is_connected,
                     'cable_color': cable_color,
-                    'connected_endpoint_id': connected_endpoint_id,
+                    'cable_id': cable_id,
+                    'connected_endpoints': connected_endpoints,
                     'model_type': 'frontport',
                     'untagged_vlan': None,
                     'tagged_vlans': [],

@@ -59,8 +59,8 @@
                     <!-- Interface Cell -->
                     <div class="interface-cell interface-type-{{ interface.type }}"
                         id="{{ interface.model_type }}-{{ interface.id }}"
-                        data-connected-endpoint-id="{{ interface.connected_endpoint_id|default:'' }}"
-                        data-cable-color="{{ interface.cable_color|default:'' }}" data-interface-id="{{ interface.id }}"
+                        data-connected-endpoints='{% if interface.connected_endpoints %}[{% for ep in interface.connected_endpoints %}"{{ ep.id }}"{% if not forloop.last %},{% endif %}{% endfor %}]{% else %}[]{% endif %}'
+                        data-cable-color="{{ interface.cable_color|default:'' }}" data-cable-id="{{ interface.cable_id|default:'' }}" data-interface-id="{{ interface.id }}"
                         data-interface-index="{{ forloop.counter0 }}" data-interface-name="{{ interface.name }}"
                         data-interface-type="{{ interface.type }}" data-bs-toggle="tooltip" data-bs-html="true"
                         title="<strong>Port {{ interface.original_index }}: {{ interface.name }}</strong><br>
@@ -68,6 +68,7 @@
                                 {% if interface.untagged_vlan %}Untagged: VLAN {{ interface.untagged_vlan.vid }} ({{ interface.untagged_vlan.name }})<br>{% endif %}
                                 {% if interface.tagged_vlans %}Tagged: {% for vlan in interface.tagged_vlans %}VLAN {{ vlan.vid }}{% if not forloop.last %}, {% endif %}{% endfor %}<br>{% endif %}
                                 {% if interface.description %}{{ interface.description }}<br>{% endif %}
+                                {% if interface.connected_endpoints %}Connected to: {% for ep in interface.connected_endpoints %}{{ ep.name }}{% if ep.device_name %} ({{ ep.device_name }}){% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}<br>{% endif %}
                                 Status: {% if interface.connected and interface.enabled %}Connected & Enabled{% elif not interface.enabled %}Disabled{% else %}Disconnected{% endif %}" style="
                             border: 3px solid {{ interface.untagged_vlan.color|default:'#cccccc' }};
                             padding: 3px;
@@ -95,6 +96,13 @@
                             <span style="color: #6c757d; font-size: 12px;">●</span>
                             {% endif %}
                         </div>
+                        
+                        <!-- Multi-termination indicator (top-left corner) -->
+                        {% if interface.connected_endpoints|length > 1 %}
+                        <div style="position: absolute; top: 2px; left: 2px;">
+                            <span style="color: #007bff; font-size: 10px; font-weight: bold;" title="Multi-termination: {{ interface.connected_endpoints|length }} endpoints">{{ interface.connected_endpoints|length }}×</span>
+                        </div>
+                        {% endif %}
 
                         <!-- Tagged VLANs dots (bottom) -->
                         {% if interface.tagged_vlans %}
@@ -296,8 +304,8 @@
             path.setAttribute('stroke-width', '5');
             path.style.opacity = '1';
             const color = path.getAttribute('stroke');
-            startElem.style.boxShadow = '0 0 10px ' + color;
-            endElem.style.boxShadow = '0 0 10px ' + color;
+            startElem.style.boxShadow = '0 0 10px #' + color;
+            endElem.style.boxShadow = '0 0 10px #' + color;
         }
 
         function unhighlightPath(path, startElem, endElem) {
@@ -306,6 +314,31 @@
             path.style.opacity = '0.6';
             startElem.style.boxShadow = '';
             endElem.style.boxShadow = '';
+        }
+        
+        function highlightMultiPath(paths, startElem, endElems) {
+            if (!paths || paths.length === 0) return;
+            const color = paths[0].getAttribute('stroke');
+            startElem.style.boxShadow = '0 0 10px #' + color;
+            paths.forEach((path, i) => {
+                path.setAttribute('stroke-width', '5');
+                path.style.opacity = '1';
+                if (endElems[i]) {
+                    endElems[i].style.boxShadow = '0 0 10px #' + color;
+                }
+            });
+        }
+
+        function unhighlightMultiPath(paths, startElem, endElems) {
+            if (!paths || paths.length === 0) return;
+            startElem.style.boxShadow = '';
+            paths.forEach((path, i) => {
+                path.setAttribute('stroke-width', '2');
+                path.style.opacity = '0.6';
+                if (endElems[i]) {
+                    endElems[i].style.boxShadow = '';
+                }
+            });
         }
 
         function drawCables() {
@@ -319,32 +352,64 @@
             svg.setAttribute('width', window.innerWidth);
             svg.setAttribute('height', window.innerHeight);
 
-            const interfaces = document.querySelectorAll('.interface-cell[data-connected-endpoint-id]');
+            const interfaces = document.querySelectorAll('.interface-cell[data-connected-endpoints]');
             const drawnConnections = new Set();
 
             interfaces.forEach(iface => {
                 const startId = iface.id;
-                const endId = iface.dataset.connectedEndpointId;
+                let endpointsData = iface.dataset.connectedEndpoints;
+                
+                // Parse the endpoints array
+                let endpoints = [];
+                try {
+                    endpoints = JSON.parse(endpointsData || '[]');
+                } catch (e) {
+                    // Fallback: if parsing fails, treat as empty
+                    endpoints = [];
+                }
 
-                if (!endId) return;
+                if (endpoints.length === 0) return;
 
-                const connectionKey = [startId, endId].sort().join('-');
-                if (drawnConnections.has(connectionKey)) return;
+                // For multi-termination cables, we draw lines to each endpoint
+                const paths = [];
+                const targetElements = [];
+                
+                endpoints.forEach(endId => {
+                    const connectionKey = [startId, endId].sort().join('-');
+                    if (drawnConnections.has(connectionKey)) return;
 
-                const target = document.getElementById(endId);
-                if (target) {
-                    drawnConnections.add(connectionKey);
-                    const path = drawLine(iface, target, iface.dataset.cableColor);
-
-                    iface.onmouseenter = () => highlightPath(path, iface, target);
-                    iface.onmouseleave = () => unhighlightPath(path, iface, target);
-                    target.onmouseenter = () => highlightPath(path, iface, target);
-                    target.onmouseleave = () => unhighlightPath(path, iface, target);
+                    const target = document.getElementById(endId);
+                    if (target) {
+                        drawnConnections.add(connectionKey);
+                        const path = drawLine(iface, target, iface.dataset.cableColor, iface.dataset.cableId);
+                        paths.push(path);
+                        targetElements.push(target);
+                    }
+                });
+                
+                // Set up hover handlers for multi-termination highlighting
+                if (paths.length > 0) {
+                    iface.onmouseenter = () => highlightMultiPath(paths, iface, targetElements);
+                    iface.onmouseleave = () => unhighlightMultiPath(paths, iface, targetElements);
+                    
+                    // Also set up hover on each target
+                    targetElements.forEach((target, i) => {
+                        const originalEnter = target.onmouseenter;
+                        const originalLeave = target.onmouseleave;
+                        target.onmouseenter = () => {
+                            highlightMultiPath(paths, iface, targetElements);
+                            if (originalEnter) originalEnter();
+                        };
+                        target.onmouseleave = () => {
+                            unhighlightMultiPath(paths, iface, targetElements);
+                            if (originalLeave) originalLeave();
+                        };
+                    });
                 }
             });
         }
 
-        function drawLine(startElem, endElem, color) {
+        function drawLine(startElem, endElem, color, cableId) {
             const startRect = startElem.getBoundingClientRect();
             const endRect = endElem.getBoundingClientRect();
 
@@ -361,13 +426,24 @@
             const d = `M ${x1} ${y1} C ${x1} ${y1 + controlPointOffset}, ${x2} ${y2 - controlPointOffset}, ${x2} ${y2}`;
 
             path.setAttribute('d', d);
-            path.setAttribute('stroke', color || '#000000');
+            path.setAttribute('stroke', color || '000000');
             path.setAttribute('stroke-width', '2');
             path.setAttribute('fill', 'none');
             path.setAttribute('style', 'pointer-events: stroke; cursor: pointer; opacity: 0.6; transition: opacity 0.2s, stroke-width 0.2s;');
+            if (cableId) {
+                path.setAttribute('data-cable-id', cableId);
+            }
 
             path.addEventListener('mouseenter', () => highlightPath(path, startElem, endElem));
             path.addEventListener('mouseleave', () => unhighlightPath(path, startElem, endElem));
+            
+            // Double-click to navigate to cable view
+            path.addEventListener('dblclick', (e) => {
+                e.preventDefault();
+                if (cableId) {
+                    window.open('/dcim/cables/' + cableId + '/', '_blank');
+                }
+            });
 
             svg.appendChild(path);
             return path;

@@ -338,7 +338,7 @@
         enabled = Math.random() > 0.1,
         untaggedVlan = null,
         taggedVlans = [],
-        connectedEndpointId = null,
+        connectedEndpoints = [],
         cableColor = null,
         modelType = 'interface'
       } = options;
@@ -348,6 +348,9 @@
       const borderColor = untaggedVlan ? vlanColors[untaggedVlan] || '#cccccc' : '#cccccc';
 
       const id = `${modelType}-${deviceId}-${index}`;
+      const endpointsJson = JSON.stringify(connectedEndpoints.map(ep => ep.id));
+      const endpointsDisplay = connectedEndpoints.map(ep => ep.name + (ep.deviceName ? ` (${ep.deviceName})` : '')).join(', ');
+      const multiTermCount = connectedEndpoints.length;
 
       return `
                 <a href="#" class="grid-item-wrapper" style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: inherit;">
@@ -356,7 +359,7 @@
                     </div>
                     <div class="interface-cell interface-type-${type}"
                         id="${id}"
-                        data-connected-endpoint-id="${connectedEndpointId || ''}"
+                        data-connected-endpoints='${endpointsJson}'
                         data-cable-color="${cableColor || ''}"
                         data-interface-id="${index}"
                         data-interface-index="${index - 1}"
@@ -364,7 +367,7 @@
                         data-interface-type="${type}"
                         data-bs-toggle="tooltip"
                         data-bs-html="true"
-                        title="<strong>Port ${index}: eth${index}</strong><br>Type: ${type}<br>${untaggedVlan ? 'Untagged: ' + untaggedVlan + '<br>' : ''}${taggedVlans.length ? 'Tagged: ' + taggedVlans.join(', ') + '<br>' : ''}Status: ${connected && enabled ? 'Connected & Enabled' : (!enabled ? 'Disabled' : 'Disconnected')}"
+                        title="<strong>Port ${index}: eth${index}</strong><br>Type: ${type}<br>${untaggedVlan ? 'Untagged: ' + untaggedVlan + '<br>' : ''}${taggedVlans.length ? 'Tagged: ' + taggedVlans.join(', ') + '<br>' : ''}${connectedEndpoints.length ? 'Connected to: ' + endpointsDisplay + '<br>' : ''}Status: ${connected && enabled ? 'Connected & Enabled' : (!enabled ? 'Disabled' : 'Disconnected')}"
                         style="
                             border: 3px solid ${borderColor};
                             padding: 3px;
@@ -378,6 +381,11 @@
                         <div style="position: absolute; top: 2px; right: 2px;">
                             <span style="color: ${statusColor}; font-size: 12px;">●</span>
                         </div>
+                        ${multiTermCount > 1 ? `
+                            <div style="position: absolute; top: 2px; left: 2px;">
+                                <span style="color: #007bff; font-size: 10px; font-weight: bold;" title="Multi-termination: ${multiTermCount} endpoints">${multiTermCount}×</span>
+                            </div>
+                        ` : ''}
                         ${taggedVlans.length > 0 ? `
                             <div style="position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); display: flex; gap: 2px;">
                                 ${taggedVlans.map(v => `<span style="width: 7px; height: 7px; border-radius: 50%; background-color: ${vlanColors[v] || '#999'}; display: inline-block; border: 1px solid #333;"></span>`).join('')}
@@ -421,11 +429,11 @@
       const taggedVlans = vlans.slice(0, taggedCount);
 
       // Create connections between devices
-      let connectedEndpointId = null;
+      let connectedEndpoints = [];
       let cableColor = null;
 
       if (i <= 24) {
-        connectedEndpointId = `interface-2-${i}`;
+        connectedEndpoints = [{ id: `interface-2-${i}`, name: `eth${i}`, type: 'interface', deviceName: 'Access-Switch-01' }];
         cableColor = ['#0066cc', '#cc6600', '#00cc66', '#cc0066'][i % 4];
       }
 
@@ -435,7 +443,7 @@
         taggedVlans: taggedVlans,
         connected: i <= 40,
         enabled: i !== 5 && i !== 15,
-        connectedEndpointId: connectedEndpointId,
+        connectedEndpoints: connectedEndpoints,
         cableColor: cableColor
       });
     }
@@ -451,7 +459,7 @@
         taggedVlans: i % 4 === 0 ? ['Voice', 'Users'] : [],
         connected: i <= 20,
         enabled: true,
-        connectedEndpointId: `interface-1-${i}`,
+        connectedEndpoints: [{ id: `interface-1-${i}`, name: `eth${i}`, type: 'interface', deviceName: 'Core-Switch-01' }],
         cableColor: ['#0066cc', '#cc6600', '#00cc66', '#cc0066'][i % 4]
       });
     }
@@ -460,30 +468,78 @@
       device2Grid.innerHTML += generateEmptyCell(i);
     }
 
-    // Generate Device 3: Patch Panel (24 front ports)
+    // Generate Device 3: Patch Panel (24 front ports) - includes multi-termination examples
     const device3Grid = document.getElementById('device3-grid');
     for (let i = 1; i <= 24; i++) {
+      let connectedEndpoints = [];
+      let cableColor = null;
+      
+      // Example: Ports 1-2 are a fiber pair going to a single SFP port (multi-termination)
+      if (i === 1) {
+        connectedEndpoints = [
+          { id: `frontport-3-2`, name: 'FP2', type: 'frontport', deviceName: 'Patch-Panel-01' }
+        ];
+        cableColor = '#ff6600';
+      } else if (i === 2) {
+        connectedEndpoints = [
+          { id: `frontport-3-1`, name: 'FP1', type: 'frontport', deviceName: 'Patch-Panel-01' }
+        ];
+        cableColor = '#ff6600';
+      }
+      // Example: Port 3 connects to multiple front ports (multi-termination: fiber breakout)
+      else if (i === 3) {
+        connectedEndpoints = [
+          { id: `interface-2-21`, name: 'eth21', type: 'interface', deviceName: 'Access-Switch-01' },
+          { id: `interface-2-22`, name: 'eth22', type: 'interface', deviceName: 'Access-Switch-01' }
+        ];
+        cableColor = '#9900cc';
+      }
+      // Example: Port 4-5 are part of a trunk cable going to server
+      else if (i === 4) {
+        connectedEndpoints = [
+          { id: `interface-4-3`, name: 'eth3', type: 'interface', deviceName: 'Server-01' },
+          { id: `interface-4-4`, name: 'eth4', type: 'interface', deviceName: 'Server-01' }
+        ];
+        cableColor = '#00cc99';
+      }
+      else if (i <= 18) {
+        connectedEndpoints = [{ id: `interface-2-${i}`, name: `eth${i}`, type: 'interface', deviceName: 'Access-Switch-01' }];
+        cableColor = '#666666';
+      }
+      
       device3Grid.innerHTML += generateInterface(i, 3, {
         type: 'front-port-8p8c',
         modelType: 'frontport',
-        connected: i <= 18,
+        connected: i <= 18 || i <= 5,
         enabled: true,
-        connectedEndpointId: i <= 18 ? `interface-2-${i}` : null,
-        cableColor: i <= 18 ? '#666666' : null
+        connectedEndpoints: connectedEndpoints,
+        cableColor: cableColor
       });
     }
 
     // Generate Device 4: Server (4 SFP+ ports)
     const device4Grid = document.getElementById('device4-grid');
     for (let i = 1; i <= 4; i++) {
+      let connectedEndpoints = [];
+      let cableColor = null;
+      
+      if (i <= 2) {
+        connectedEndpoints = [{ id: `interface-1-${44 + i}`, name: `eth${44 + i}`, type: 'interface', deviceName: 'Core-Switch-01' }];
+        cableColor = '#00cc66';
+      } else if (i === 3 || i === 4) {
+        // These are connected via multi-termination from patch panel port 4
+        connectedEndpoints = [{ id: `frontport-3-4`, name: 'FP4', type: 'frontport', deviceName: 'Patch-Panel-01' }];
+        cableColor = '#00cc99';
+      }
+      
       device4Grid.innerHTML += generateInterface(i, 4, {
         type: '10gbase-x-sfpp',
         untaggedVlan: 'Servers',
         taggedVlans: i <= 2 ? ['Management'] : [],
-        connected: i <= 2,
+        connected: true,
         enabled: true,
-        connectedEndpointId: i <= 2 ? `interface-1-${44 + i}` : null,
-        cableColor: i <= 2 ? '#00cc66' : null
+        connectedEndpoints: connectedEndpoints,
+        cableColor: cableColor
       });
     }
 
@@ -514,6 +570,31 @@
       startElem.style.boxShadow = '';
       endElem.style.boxShadow = '';
     }
+    
+    function highlightMultiPath(paths, startElem, endElems) {
+      if (!paths || paths.length === 0) return;
+      const color = paths[0].getAttribute('stroke');
+      startElem.style.boxShadow = '0 0 10px ' + color;
+      paths.forEach((path, i) => {
+        path.setAttribute('stroke-width', '5');
+        path.style.opacity = '1';
+        if (endElems[i]) {
+          endElems[i].style.boxShadow = '0 0 10px ' + color;
+        }
+      });
+    }
+
+    function unhighlightMultiPath(paths, startElem, endElems) {
+      if (!paths || paths.length === 0) return;
+      startElem.style.boxShadow = '';
+      paths.forEach((path, i) => {
+        path.setAttribute('stroke-width', '2');
+        path.style.opacity = '0.6';
+        if (endElems[i]) {
+          endElems[i].style.boxShadow = '';
+        }
+      });
+    }
 
     function drawCables() {
       svg.innerHTML = '';
@@ -526,27 +607,58 @@
       svg.setAttribute('width', window.innerWidth);
       svg.setAttribute('height', window.innerHeight);
 
-      const interfaces = document.querySelectorAll('.interface-cell[data-connected-endpoint-id]');
+      const interfaces = document.querySelectorAll('.interface-cell[data-connected-endpoints]');
       const drawnConnections = new Set();
 
       interfaces.forEach(iface => {
         const startId = iface.id;
-        const endId = iface.dataset.connectedEndpointId;
+        let endpointsData = iface.dataset.connectedEndpoints;
+        
+        // Parse the endpoints array
+        let endpoints = [];
+        try {
+          endpoints = JSON.parse(endpointsData || '[]');
+        } catch (e) {
+          endpoints = [];
+        }
 
-        if (!endId) return;
+        if (endpoints.length === 0) return;
 
-        const connectionKey = [startId, endId].sort().join('-');
-        if (drawnConnections.has(connectionKey)) return;
+        // For multi-termination cables, we draw lines to each endpoint
+        const paths = [];
+        const targetElements = [];
+        
+        endpoints.forEach(endId => {
+          const connectionKey = [startId, endId].sort().join('-');
+          if (drawnConnections.has(connectionKey)) return;
 
-        const target = document.getElementById(endId);
-        if (target) {
-          drawnConnections.add(connectionKey);
-          const path = drawLine(iface, target, iface.dataset.cableColor);
-
-          iface.onmouseenter = () => highlightPath(path, iface, target);
-          iface.onmouseleave = () => unhighlightPath(path, iface, target);
-          target.onmouseenter = () => highlightPath(path, iface, target);
-          target.onmouseleave = () => unhighlightPath(path, iface, target);
+          const target = document.getElementById(endId);
+          if (target) {
+            drawnConnections.add(connectionKey);
+            const path = drawLine(iface, target, iface.dataset.cableColor);
+            paths.push(path);
+            targetElements.push(target);
+          }
+        });
+        
+        // Set up hover handlers for multi-termination highlighting
+        if (paths.length > 0) {
+          iface.onmouseenter = () => highlightMultiPath(paths, iface, targetElements);
+          iface.onmouseleave = () => unhighlightMultiPath(paths, iface, targetElements);
+          
+          // Also set up hover on each target
+          targetElements.forEach((target, i) => {
+            const originalEnter = target.onmouseenter;
+            const originalLeave = target.onmouseleave;
+            target.onmouseenter = () => {
+              highlightMultiPath(paths, iface, targetElements);
+              if (originalEnter) originalEnter();
+            };
+            target.onmouseleave = () => {
+              unhighlightMultiPath(paths, iface, targetElements);
+              if (originalLeave) originalLeave();
+            };
+          });
         }
       });
     }
