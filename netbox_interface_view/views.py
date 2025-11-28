@@ -200,10 +200,10 @@ class RackInterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     cable_color = cable.color
                     
                     # Find the other end
-                    if interface in cable.a_terminations.all():
-                        terminations = cable.b_terminations.all()
+                    if interface in cable.a_terminations:
+                        terminations = cable.b_terminations
                     else:
-                        terminations = cable.a_terminations.all()
+                        terminations = cable.a_terminations
                         
                     if terminations:
                         peer = terminations[0]
@@ -237,10 +237,10 @@ class RackInterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     cable = fp.cable
                     cable_color = cable.color
                     
-                    if fp in cable.a_terminations.all():
-                        terminations = cable.b_terminations.all()
+                    if fp in cable.a_terminations:
+                        terminations = cable.b_terminations
                     else:
-                        terminations = cable.a_terminations.all()
+                        terminations = cable.a_terminations
                         
                     if terminations:
                         peer = terminations[0]

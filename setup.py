@@ -8,11 +8,11 @@ except (IOError, FileNotFoundError):
 
 setup(
     name='netbox-interface-view',
-    version='0.2.4',
+    version='0.2.5',
     description='NetBox Plugin for viewing interfaces in a grid layout with VLAN color-coding',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    url='https://github.com/Tolfx/netbox-plugin-interface-view',
+    url='https://github.com/ITW-Welding-AB/netbox-plugin-interface-view',
     author='Tolfx',
     license='Apache 2.0',
     install_requires=[],
