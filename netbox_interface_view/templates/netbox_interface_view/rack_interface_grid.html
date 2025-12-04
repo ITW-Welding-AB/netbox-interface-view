@@ -26,38 +26,22 @@
         style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 10; display: none;"></svg>
 
     {% for device_data in devices_with_interfaces %}
-    <div class="card mb-4">
-        <div class="card-header">
-            <a href="{{ device_data.device_url }}"><strong>{{ device_data.device_name }}</strong></a>
-        </div>
-        <div class="card-body">
-            <!-- Grid Info -->
-            <div class="alert alert-info">
-                <strong>Grid Configuration:</strong> {{ device_data.grid_rows }} rows × {{ device_data.grid_columns }}
-                columns ({{ device_data.total_cells }} cells)
-                <br>
-                <strong>Interfaces Shown:</strong> {{ device_data.interfaces|length }}
-            </div>
-
-            <!-- Interface Grid -->
-            <div class="interface-grid" style="
-                display: grid; 
-                grid-template-columns: repeat({{ device_data.grid_columns }}, minmax(40px, 80px));
-                gap: 2px;
-                margin-bottom: 20px;
-                width: fit-content;
-            ">
-                {% for interface in device_data.interfaces %}
-                <a href="{{ interface.url }}" target="_blank" class="grid-item-wrapper"
-                    style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: inherit;">
-                    <!-- Port Number above this specific cell -->
-                    <div
-                        style="text-align: center; font-size: 0.65em; color: #495057; font-weight: 600; margin-bottom: 2px;">
-                        {{ interface.original_index }}
-                    </div>
-
-                    <!-- Interface Cell -->
-                    <div class="interface-cell interface-type-{{ interface.type }}"
+    <div class="rack-device-row" style="display: flex; align-items: stretch; margin-bottom: 4px;">
+        <!-- Device Name (on the left side) -->
+        <a href="{{ device_data.device_url }}" class="rack-device-name">{{ device_data.device_name }}</a>
+        
+        <!-- Interface Grid -->
+        <div class="interface-grid" style="
+            display: grid; 
+            grid-template-columns: repeat({{ device_data.grid_columns }}, minmax(40px, 80px));
+            gap: 1px;
+            width: fit-content;
+        ">
+            {% for interface in device_data.interfaces %}
+            <a href="{{ interface.url }}" target="_blank" class="grid-item-wrapper"
+                style="display: flex; flex-direction: column; align-items: center; text-decoration: none; color: inherit;">
+                <!-- Interface Cell -->
+                <div class="interface-cell interface-type-{{ interface.type }}"
                         id="{{ interface.model_type }}-{{ interface.id }}"
                         data-connected-endpoints='{% if interface.connected_endpoints %}[{% for ep in interface.connected_endpoints %}"{{ ep.id }}"{% if not forloop.last %},{% endif %}{% endfor %}]{% else %}[]{% endif %}'
                         data-cable-color="{{ interface.cable_color|default:'' }}" data-cable-id="{{ interface.cable_id|default:'' }}" data-interface-id="{{ interface.id }}"
@@ -123,52 +107,50 @@
                     </div>
                 </a>
                 {% endfor %}
-
-                <!-- Empty cells to fill the grid -->
-                {% for i in device_data.empty_cells %}
-                <div class="grid-item-wrapper" style="display: flex; flex-direction: column; align-items: center;">
-                    <!-- Empty port number -->
-                    <div style="text-align: center; font-size: 0.65em; color: #dee2e6; margin-bottom: 2px;">
-                        {{ device_data.interfaces|length|add:forloop.counter }}
-                    </div>
-
-                    <!-- Empty Cell -->
-                    <div class="interface-cell-empty" style="
-                        border: 1px dashed #dee2e6;
-                        border-radius: 3px;
-                        padding: 4px;
-                        min-height: 45px;
-                        max-height: 45px;
-                        width: 100%;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        color: #adb5bd;
-                    ">
-                        <span style="font-size: 0.6em;">—</span>
-                    </div>
-                </div>
-                {% endfor %}
             </div>
-        </div>
     </div>
-    {% if not forloop.last %}
-    <hr>{% endif %}
     {% endfor %}
 </div>
 
 <style>
+    .rack-device-row {
+        border: 1px solid var(--tblr-border-color);
+        border-radius: 4px;
+        padding: 3px;
+        background-color: var(--tblr-bg-surface);
+    }
+
+    .rack-device-row:hover {
+        background-color: var(--tblr-bg-surface-secondary);
+    }
+
+    .rack-device-name {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        transform: rotate(180deg);
+        padding: 4px 6px;
+        margin-right: 4px;
+        font-size: 0.75em;
+        font-weight: 600;
+        color: var(--tblr-body-color);
+        text-decoration: none;
+        background-color: var(--tblr-bg-surface-secondary);
+        border-radius: 3px;
+        white-space: nowrap;
+        min-width: 20px;
+    }
+
+    .rack-device-name:hover {
+        background-color: var(--tblr-primary);
+        color: white !important;
+    }
+
     .interface-cell {
         transition: transform 0.1s, box-shadow 0.1s;
         background-color: var(--tblr-bg-surface-tertiary);
-    }
-
-    .interface-cell-empty {
-        background-color: var(--tblr-bg-surface-tertiary);
-    }
-
-    html[data-theme="dark"] .interface-cell-empty {
-        border-color: #3a4249 !important;
     }
 
     .interface-cell:hover {
