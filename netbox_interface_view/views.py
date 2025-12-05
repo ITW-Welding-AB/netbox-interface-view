@@ -344,9 +344,15 @@ class RackInterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     reordered_interfaces[new_index] = item
             interface_list = [item for item in reordered_interfaces if item is not None]
 
+            # Get device type color (if available)
+            device_type_color = None
+            if device.device_type:
+                device_type_color = device.device_type.custom_field_data.get('color', None)
+
             devices_with_interfaces.append({
                 'device_name': device.name,
                 'device_url': device.get_absolute_url(),
+                'device_type_color': device_type_color,
                 'interfaces': interface_list,
                 'grid_rows': grid_rows,
                 'grid_columns': grid_columns,

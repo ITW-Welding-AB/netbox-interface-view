@@ -26,7 +26,7 @@
         style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 10; display: none;"></svg>
 
     {% for device_data in devices_with_interfaces %}
-    <div class="rack-device-row" style="display: flex; align-items: stretch; margin-bottom: 4px;">
+    <div class="rack-device-row" style="display: flex; align-items: stretch; margin-bottom: 4px;{% if device_data.device_type_color %} background-color: {{ device_data.device_type_color }}aa;{% endif %}">
         <!-- Device Name (on the left side) -->
         <a href="{{ device_data.device_url }}" class="rack-device-name">{{ device_data.device_name }}</a>
         
