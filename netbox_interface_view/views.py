@@ -9,7 +9,7 @@ from utilities.views import register_model_view
 
 
 def is_compact_type(type_str):
-    compact_keywords = ['base', 'sfp', '8p8c', 'lc', 'sc', 'fc', 'mpo']
+    compact_keywords = ['base', 'sfp', '8p8c', 'lc', 'sc', 'fc', 'mpo', 'st']
     return any(keyword in type_str for keyword in compact_keywords)
 
 
@@ -344,15 +344,16 @@ class RackInterfaceGridView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     reordered_interfaces[new_index] = item
             interface_list = [item for item in reordered_interfaces if item is not None]
 
-            # Get device type color (if available)
+            # Get device role color (if available)
             device_color = None
-            if device.role:
-                device_color = device.role.color
+            if device.role and device.role.color:
+                # NetBox stores colors without # prefix, so we add it
+                device_color = '#' + device.role.color
 
             devices_with_interfaces.append({
                 'device_name': device.name,
                 'device_url': device.get_absolute_url(),
-                'device_type_color': device_color,
+                'device_role_color': device_color,
                 'interfaces': interface_list,
                 'grid_rows': grid_rows,
                 'grid_columns': grid_columns,
